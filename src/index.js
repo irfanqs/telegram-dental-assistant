@@ -43,7 +43,7 @@ async function main() {
 
     // Start bot polling
     bot.start();
-    console.log('✓ Bot is running and listening for messages');
+    console.log('Bot is running and listening for messages');
     console.log('Press Ctrl+C to stop the bot');
 
   } catch (error) {

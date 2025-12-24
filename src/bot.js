@@ -1,11 +1,11 @@
 /**
  * Bot module for Telegram Patient Bot
  * Handles bot initialization and command handlers
- * Requirements: 1.1, 1.2, 1.3
  */
 
 const TelegramBot = require('node-telegram-bot-api');
-const { MESSAGES, CALLBACK_DATA } = require('./constants');
+const { MESSAGES, CALLBACK_DATA, KARIES_TYPES } = require('./constants');
+const path = require('path');
 
 /**
  * TelegramPatientBot class
@@ -36,7 +36,6 @@ class TelegramPatientBot {
 
   /**
    * Register error handlers for Telegram API
-   * Requirement: 7.6
    */
   registerErrorHandlers() {
     // Handle polling errors
@@ -56,25 +55,26 @@ class TelegramPatientBot {
    */
   registerCommands() {
     // /start command handler
-    // Requirements: 1.1, 1.2, 1.3
     this.bot.onText(/\/start/, (msg) => {
       this.handleStartCommand(msg);
     });
 
     // /newpatient command handler
-    // Requirements: 2.1, 2.2
     this.bot.onText(/\/newpatient/, (msg) => {
       this.handleNewPatientCommand(msg);
     });
 
     // /exit command handler
-    // Requirements: 4.1, 4.2, 4.3, 4.4
     this.bot.onText(/\/exit/, (msg) => {
       this.handleExitCommand(msg);
     });
 
+    // /letak_karies command handler
+    this.bot.onText(/\/letak_karies/, (msg) => {
+      this.handleLetakKariesCommand(msg);
+    });
+
     // Message handler for field inputs
-    // Requirements: 2.3, 3.2, 3.3, 3.4
     this.bot.on('message', (msg) => {
       this.handleMessage(msg);
     });
@@ -90,8 +90,36 @@ class TelegramPatientBot {
   }
 
   /**
+   * Handle /letak_karies command
+   * @param {object} msg - Telegram message object
+   */
+  async handleLetakKariesCommand(msg) {
+    const chatId = msg.chat.id;
+
+    try {
+      // Create inline keyboard with karies options
+      const keyboard = KARIES_TYPES.map(karies => [
+        { 
+          text: karies.label, 
+          callback_data: `${CALLBACK_DATA.KARIES_PREFIX}${karies.key}` 
+        }
+      ]);
+
+      const options = {
+        reply_markup: {
+          inline_keyboard: keyboard
+        }
+      };
+
+      await this.bot.sendMessage(chatId, 'Pilih karies yang ingin Anda lihat:', options);
+    } catch (error) {
+      console.error('Error in handleLetakKariesCommand:', error);
+      await this.sendErrorMessage(chatId, 'Terjadi kesalahan. Silakan coba lagi.');
+    }
+  }
+
+  /**
    * Handle /start command
-   * Requirements: 1.1, 1.2, 1.3
    * @param {object} msg - Telegram message object
    */
   async handleStartCommand(msg) {
@@ -100,7 +128,6 @@ class TelegramPatientBot {
 
     try {
       // Check if user has an active session
-      // Requirement: 1.2
       if (this.sessionManager.hasActiveSession(userId)) {
         // User has active session - ask to continue or start fresh
         const options = {
@@ -116,9 +143,12 @@ class TelegramPatientBot {
 
         await this.bot.sendMessage(chatId, MESSAGES.CONTINUE_SESSION, options);
       } else {
-        // No active session - send welcome message
-        // Requirement: 1.1
-        await this.bot.sendMessage(chatId, MESSAGES.WELCOME);
+        // No active session - ask for doctor name first
+        // Create temporary session to track that we're waiting for doctor name
+        const session = this.sessionManager.createSession(userId);
+        session.state = 'waiting_doctor_name';
+        
+        await this.bot.sendMessage(chatId, MESSAGES.ASK_DOCTOR_NAME);
       }
     } catch (error) {
       console.error('Error in handleStartCommand:', error);
@@ -154,6 +184,10 @@ class TelegramPatientBot {
       else if (data.startsWith(CALLBACK_DATA.EDIT_FIELD_PREFIX)) {
         await this.handleEditFieldSelection(chatId, userId, data);
       }
+      // Handle karies selection callbacks
+      else if (data.startsWith(CALLBACK_DATA.KARIES_PREFIX)) {
+        await this.handleKariesSelection(chatId, userId, data);
+      }
     } catch (error) {
       console.error('Error in handleCallbackQuery:', error);
       await this.sendErrorMessage(chatId, 'Terjadi kesalahan. Silakan coba lagi.');
@@ -169,7 +203,6 @@ class TelegramPatientBot {
 
   /**
    * Handle "Lanjutkan" (Continue) callback
-   * Requirement: 1.3
    * @param {number} chatId - Telegram chat ID
    * @param {number} userId - Telegram user ID
    */
@@ -198,9 +231,12 @@ class TelegramPatientBot {
    */
   async handleResumeStartNew(chatId, userId) {
     try {
-      // Delete old session and create new one
+      const existingSession = this.sessionManager.getSession(userId);
+      const doctorName = existingSession ? existingSession.doctorName : null;
+      
+      // Delete old session and create new one with doctor name
       this.sessionManager.deleteSession(userId);
-      this.sessionManager.createSession(userId);
+      this.sessionManager.createSession(userId, doctorName);
       
       // Send first field prompt
       await this.bot.sendMessage(chatId, MESSAGES.FIRST_FIELD_PROMPT);
@@ -212,7 +248,6 @@ class TelegramPatientBot {
 
   /**
    * Handle /newpatient command
-   * Requirements: 2.1, 2.2
    * @param {object} msg - Telegram message object
    */
   async handleNewPatientCommand(msg) {
@@ -220,19 +255,22 @@ class TelegramPatientBot {
     const userId = msg.from.id;
 
     try {
-      // Check if user already has active session
-      // Requirement: 2.1
-      if (this.sessionManager.hasActiveSession(userId)) {
+      const existingSession = this.sessionManager.getSession(userId);
+      
+      // Check if user already has active data collection session
+      if (existingSession && existingSession.state === 'collecting') {
         await this.bot.sendMessage(chatId, MESSAGES.ERROR_ALREADY_HAS_SESSION);
         return;
       }
 
-      // Create new session
-      // Requirement: 2.1
-      this.sessionManager.createSession(userId);
+      // Get doctor name from existing session (from /start)
+      const doctorName = existingSession ? existingSession.doctorName : null;
+
+      // Create new session with doctor name if available
+      this.sessionManager.deleteSession(userId); // Clear any old session
+      this.sessionManager.createSession(userId, doctorName);
 
       // Send first field prompt
-      // Requirement: 2.2
       await this.bot.sendMessage(chatId, MESSAGES.FIRST_FIELD_PROMPT);
     } catch (error) {
       console.error('Error in handleNewPatientCommand:', error);
@@ -242,7 +280,6 @@ class TelegramPatientBot {
 
   /**
    * Handle /exit command
-   * Requirements: 4.1, 4.2, 4.3, 4.4
    * @param {object} msg - Telegram message object
    */
   async handleExitCommand(msg) {
@@ -251,18 +288,15 @@ class TelegramPatientBot {
 
     try {
       // Check if user has active session
-      // Requirement: 4.1
       if (!this.sessionManager.hasActiveSession(userId)) {
         await this.bot.sendMessage(chatId, MESSAGES.ERROR_NO_ACTIVE_SESSION);
         return;
       }
 
       // Delete session
-      // Requirements: 4.2, 4.3
       this.sessionManager.deleteSession(userId);
 
       // Send cancellation confirmation message
-      // Requirement: 4.4
       await this.bot.sendMessage(chatId, MESSAGES.CANCELLED);
     } catch (error) {
       console.error('Error in handleExitCommand:', error);
@@ -272,7 +306,6 @@ class TelegramPatientBot {
 
   /**
    * Handle regular messages for field input collection
-   * Requirements: 2.3, 3.2, 3.3, 3.4, 6.3, 6.4, 6.5
    * @param {object} msg - Telegram message object
    */
   async handleMessage(msg) {
@@ -286,18 +319,28 @@ class TelegramPatientBot {
 
     try {
       // Check if user has active session
-      // Requirement: 2.3
       if (!this.sessionManager.hasActiveSession(userId)) {
         return; // Ignore messages without active session
       }
 
       const session = this.sessionManager.getSession(userId);
 
+      // Check if waiting for doctor name from /start
+      if (session.state === 'waiting_doctor_name') {
+        // Store doctor name
+        session.doctorName = msg.text;
+        session.data.dokterPemeriksa = msg.text;
+        session.state = 'idle'; // Change state to idle, waiting for /newpatient
+        
+        // Send welcome message with doctor name
+        const welcomeMsg = `Hai dokter ${msg.text}, semangat kerjanya hari ini🤗!\nKetik /newpatient untuk memulai pendataan.`;
+        await this.bot.sendMessage(chatId, welcomeMsg);
+        return;
+      }
+
       // Check if user is in editing state
-      // Requirements: 6.3, 6.4, 6.5
       if (session.state === 'editing' && session.editingField) {
         // Update field value with new input
-        // Requirement: 6.3
         this.sessionManager.updateField(userId, session.editingField, msg.text);
         
         // Clear editing state
@@ -305,7 +348,6 @@ class TelegramPatientBot {
         session.state = 'confirming';
         
         // Return to confirmation summary with updated data
-        // Requirements: 6.4, 6.5
         await this.showConfirmationSummary(chatId, userId);
         return;
       }
@@ -319,11 +361,9 @@ class TelegramPatientBot {
       }
 
       // Store user input in session without validation
-      // Requirement: 3.3
       this.sessionManager.updateField(userId, currentField.key, msg.text);
 
       // Increment field index
-      // Requirement: 2.3, 3.4
       this.incrementFieldIndex(userId);
 
       // Check if more fields remain
@@ -331,12 +371,10 @@ class TelegramPatientBot {
       
       if (nextField) {
         // More fields remain: send next field prompt
-        // Requirement: 3.2
         const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label.toLowerCase()}`;
         await this.bot.sendMessage(chatId, prompt);
       } else {
         // All fields collected: show confirmation summary
-        // Requirements: 2.4, 5.1, 5.2
         await this.showConfirmationSummary(chatId, userId);
       }
     } catch (error) {
@@ -347,7 +385,6 @@ class TelegramPatientBot {
 
   /**
    * Format and display confirmation summary with inline keyboard
-   * Requirements: 2.4, 5.1, 5.2
    * @param {number} chatId - Telegram chat ID
    * @param {number} userId - Telegram user ID
    */
@@ -360,11 +397,9 @@ class TelegramPatientBot {
       }
 
       // Format summary with all collected data
-      // Requirement: 5.1
       const summary = this.formatSummary(data);
 
       // Create inline keyboard with Yes, No, Change options
-      // Requirement: 5.2
       const options = {
         reply_markup: {
           inline_keyboard: [
@@ -387,7 +422,6 @@ class TelegramPatientBot {
 
   /**
    * Format patient data into readable summary
-   * Requirement: 5.1
    * @param {object} data - Patient data object
    * @returns {string} Formatted summary string
    */
@@ -420,7 +454,6 @@ class TelegramPatientBot {
 
   /**
    * Handle "Yes" confirmation callback
-   * Requirements: 5.3, 7.5, 7.6, 7.7
    * @param {number} chatId - Telegram chat ID
    * @param {number} userId - Telegram user ID
    */
@@ -435,23 +468,19 @@ class TelegramPatientBot {
 
     try {
       // Call SheetsService.appendPatientData()
-      // Requirement: 5.3
       const result = await this.sheetsService.appendPatientData(data);
 
       if (result.success) {
         // If success: send success message and delete session
-        // Requirements: 7.5
         this.bot.sendMessage(chatId, MESSAGES.SUCCESS);
         this.sessionManager.deleteSession(userId);
       } else {
         // If failure: send error message and keep session
-        // Requirements: 7.6, 7.7
         this.bot.sendMessage(chatId, MESSAGES.ERROR_SAVE_FAILED);
         // Session is kept intact for retry
       }
     } catch (error) {
       // Handle unexpected errors
-      // Requirements: 7.6, 7.7
       console.error('Error in handleConfirmYes:', error);
       this.bot.sendMessage(chatId, MESSAGES.ERROR_SAVE_FAILED);
       // Session is kept intact for retry
@@ -460,14 +489,12 @@ class TelegramPatientBot {
 
   /**
    * Handle "No" confirmation callback
-   * Requirements: 5.4
    * @param {number} chatId - Telegram chat ID
    * @param {number} userId - Telegram user ID
    */
   async handleConfirmNo(chatId, userId) {
     try {
       // Delete session via SessionManager
-      // Requirement: 5.4
       this.sessionManager.deleteSession(userId);
       
       // Send cancellation message
@@ -481,7 +508,6 @@ class TelegramPatientBot {
 
   /**
    * Handle "Change" confirmation callback
-   * Requirements: 5.5, 6.1
    * @param {number} chatId - Telegram chat ID
    * @param {number} userId - Telegram user ID
    */
@@ -495,11 +521,9 @@ class TelegramPatientBot {
       }
 
       // Set session state to 'editing'
-      // Requirement: 5.5
       session.state = 'editing';
 
       // Display inline keyboard with all field names as buttons
-      // Requirements: 5.5, 6.1
       const { FIELDS } = require('./constants');
       const keyboard = FIELDS.map(field => [
         { 
@@ -523,7 +547,6 @@ class TelegramPatientBot {
 
   /**
    * Handle field selection for editing
-   * Requirements: 6.2
    * @param {number} chatId - Telegram chat ID
    * @param {number} userId - Telegram user ID
    * @param {string} callbackData - Callback data containing field key
@@ -549,11 +572,9 @@ class TelegramPatientBot {
       }
 
       // Store selected field in session for editing
-      // Requirement: 6.2
       session.editingField = fieldKey;
 
       // Send prompt for new input
-      // Requirement: 6.2
       const prompt = `${MESSAGES.EDIT_FIELD_PROMPT_PREFIX}${field.label.toLowerCase()}${MESSAGES.EDIT_FIELD_PROMPT_SUFFIX}`;
       await this.bot.sendMessage(chatId, prompt);
     } catch (error) {
@@ -563,8 +584,39 @@ class TelegramPatientBot {
   }
 
   /**
+   * Handle karies selection callback
+   * @param {number} chatId - Telegram chat ID
+   * @param {number} userId - Telegram user ID
+   * @param {string} callbackData - Callback data containing karies key
+   */
+  async handleKariesSelection(chatId, userId, callbackData) {
+    try {
+      // Extract karies key from callback data
+      const kariesKey = callbackData.replace(CALLBACK_DATA.KARIES_PREFIX, '');
+      
+      // Find the karies type
+      const karies = KARIES_TYPES.find(k => k.key === kariesKey);
+      
+      if (!karies) {
+        await this.sendErrorMessage(chatId, 'Jenis karies tidak ditemukan.');
+        return;
+      }
+
+      // Get the image file path (relative to project root)
+      const imagePath = path.join(__dirname, '..', karies.file);
+
+      // Send the image with caption
+      await this.bot.sendPhoto(chatId, imagePath, {
+        caption: `Gambar ${karies.label}`
+      });
+    } catch (error) {
+      console.error('Error in handleKariesSelection:', error);
+      await this.sendErrorMessage(chatId, 'Terjadi kesalahan saat mengirim gambar. Pastikan file gambar tersedia.');
+    }
+  }
+
+  /**
    * Send user-friendly error message
-   * Requirement: 7.6
    * @param {number} chatId - Telegram chat ID
    * @param {string} message - Error message to send
    */

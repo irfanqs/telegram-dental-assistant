@@ -4,7 +4,6 @@
  */
 
 // Patient data fields in the exact order they should be collected
-// Requirements: 3.1
 const FIELDS = [
   { key: 'namaPasien', label: 'Nama Pasien' },
   { key: 'nik', label: 'NIK / No. RM' },
@@ -27,10 +26,10 @@ const FIELDS = [
 ];
 
 // Bot messages
-// Requirements: 3.2
 const MESSAGES = {
   // Welcome messages
-  WELCOME: 'Hai Dokter, semangat kerjanya ya hari ini!',
+  ASK_DOCTOR_NAME: 'Masukkan nama dokter pemeriksa',
+  WELCOME: 'Hai dokter {name}, semangat kerjanya hari ini🤗!\nKetik /newpatient untuk memulai pendataan.',
   CONTINUE_SESSION: 'Anda memiliki input data yang belum selesai. Ingin melanjutkan?',
   
   // Prompts
@@ -67,11 +66,24 @@ const CALLBACK_DATA = {
   
   // Edit callbacks prefix
   EDIT_FIELD_PREFIX: 'edit_',
-  EDIT_BACK: 'edit_back'
+  EDIT_BACK: 'edit_back',
+  
+  // Karies callbacks prefix
+  KARIES_PREFIX: 'karies_'
 };
+
+// Karies types with their image file paths
+const KARIES_TYPES = [
+  { key: 'D', label: 'D-car', file: 'D-car.jpeg' },
+  { key: 'L', label: 'L-car', file: 'L-car.jpeg' },
+  { key: 'M', label: 'M-car', file: 'M-car.jpeg' },
+  { key: 'O', label: 'O-car', file: 'O-car.jpeg' },
+  { key: 'V', label: 'V-car', file: 'V-car.jpeg' }
+];
 
 module.exports = {
   FIELDS,
   MESSAGES,
-  CALLBACK_DATA
+  CALLBACK_DATA,
+  KARIES_TYPES
 };

@@ -1,7 +1,6 @@
 /**
  * Session Manager for Telegram Patient Bot
  * Manages user sessions with in-memory storage
- * Requirements: 2.1, 2.3, 8.1, 8.4
  */
 
 const { FIELDS } = require('./constants');
@@ -19,17 +18,23 @@ class SessionManager {
 
   /**
    * Creates a new session for a user
-   * Requirements: 2.1
    * @param {number} userId - Telegram user ID
+   * @param {string} doctorName - Doctor name (optional, from /start)
    * @returns {object} The created session object
    */
-  createSession(userId) {
+  createSession(userId, doctorName = null) {
     const session = {
       userId,
       currentFieldIndex: 0,
       data: {},
-      state: 'collecting'
+      state: 'collecting',
+      doctorName: doctorName // Store doctor name from /start
     };
+    
+    // If doctor name is provided, pre-fill it in data
+    if (doctorName) {
+      session.data.dokterPemeriksa = doctorName;
+    }
     
     this.sessions.set(userId, session);
     return session;
@@ -37,7 +42,6 @@ class SessionManager {
 
   /**
    * Retrieves a session for a user
-   * Requirements: 2.3
    * @param {number} userId - Telegram user ID
    * @returns {object|null} The session object or null if not found
    */
@@ -47,7 +51,6 @@ class SessionManager {
 
   /**
    * Updates a specific field in the user's session
-   * Requirements: 2.3
    * @param {number} userId - Telegram user ID
    * @param {string} field - Field key to update
    * @param {string} value - Value to store
@@ -65,7 +68,6 @@ class SessionManager {
 
   /**
    * Deletes a user's session
-   * Requirements: 4.2
    * @param {number} userId - Telegram user ID
    * @returns {boolean} True if session was deleted, false if not found
    */
@@ -75,7 +77,6 @@ class SessionManager {
 
   /**
    * Checks if a user has an active session
-   * Requirements: 8.1
    * @param {number} userId - Telegram user ID
    * @returns {boolean} True if user has active session
    */
@@ -85,7 +86,6 @@ class SessionManager {
 
   /**
    * Gets the current field being collected for a user
-   * Requirements: 2.3
    * @param {number} userId - Telegram user ID
    * @returns {object|null} Field object {key, label} or null if session not found or all fields collected
    */
@@ -99,12 +99,20 @@ class SessionManager {
       return null;
     }
     
-    return FIELDS[session.currentFieldIndex];
+    const field = FIELDS[session.currentFieldIndex];
+    
+    // Skip dokterPemeriksa field if doctor name already set from /start
+    if (field.key === 'dokterPemeriksa' && session.doctorName) {
+      // Move to next field
+      session.currentFieldIndex++;
+      return this.getCurrentField(userId); // Recursive call to get next field
+    }
+    
+    return field;
   }
 
   /**
    * Gets all collected data for a user
-   * Requirements: 8.4
    * @param {number} userId - Telegram user ID
    * @returns {object|null} Data object or null if session not found
    */

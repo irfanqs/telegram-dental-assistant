@@ -112,6 +112,7 @@ Bot akan mulai berjalan dan siap menerima perintah di Telegram.
 
 - `/start` - Memulai bot dan menerima sambutan
 - `/newpatient` - Memulai proses input data pasien baru
+- `/letak_karies` - Melihat gambar lokasi karies (D-car, L-car, M-car, O-car, V-car)
 - `/exit` - Membatalkan proses input yang sedang berjalan
 
 ### Flow Input Data Pasien
@@ -160,6 +161,17 @@ Jika Anda keluar di tengah proses input:
 ### Membatalkan Input
 
 Kirim `/exit` kapan saja untuk membatalkan proses input dan menghapus data yang sudah dimasukkan.
+
+### Melihat Gambar Karies
+
+1. Kirim command `/letak_karies`
+2. Bot akan menampilkan dropdown dengan 5 pilihan:
+   - D-car (Distal)
+   - L-car (Lingual)
+   - M-car (Mesial)
+   - O-car (Oklusal)
+   - V-car (Vestibular)
+3. Pilih salah satu untuk melihat gambar lokasi karies tersebut
 
 ## Development
 
@@ -258,6 +270,34 @@ Bot mendukung multiple users secara bersamaan:
 - Data user tidak akan tercampur
 - Concurrent writes ke Google Sheets ditangani secara otomatis
 - Setiap record mendapat ID unik
+
+## Deployment
+
+Bot ini bisa di-deploy ke berbagai platform cloud:
+
+### Railway (Usage-based, ~$1-3/bulan)
+- ✅ Tidak sleep, aktif 24/7
+- ✅ Setup mudah
+- ✅ Auto-deploy dari GitHub
+- ⚠️ Tidak sepenuhnya gratis ($5 trial credit)
+
+📖 **Panduan lengkap**: [DEPLOY_RAILWAY.md](./DEPLOY_RAILWAY.md)
+
+### Render.com (GRATIS)
+- ✅ Free tier selamanya
+- ✅ Setup mudah
+- ✅ Auto-deploy dari GitHub
+- ⚠️ Sleep setelah 15 menit tidak aktif (delay 30-60 detik saat wake up)
+
+📖 **Panduan lengkap**: [DEPLOY_RENDER.md](./DEPLOY_RENDER.md)
+
+### Alternatif Lain
+- **Fly.io** - Free tier dengan resource terbatas
+- **VPS** - DigitalOcean, Vultr ($4-5/bulan) untuk full control
+
+**Rekomendasi**:
+- Untuk **testing/personal use**: Gunakan Render.com (gratis)
+- Untuk **production**: Gunakan Railway atau VPS
 
 ## License
 

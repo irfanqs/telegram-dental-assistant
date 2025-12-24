@@ -5,6 +5,28 @@
  */
 
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+
+// Handle Google Credentials for cloud deployment (Railway, Render, etc)
+// If GOOGLE_CREDENTIALS_BASE64 is set, decode and write to file
+if (process.env.GOOGLE_CREDENTIALS_BASE64) {
+  try {
+    const credentials = Buffer.from(
+      process.env.GOOGLE_CREDENTIALS_BASE64,
+      'base64'
+    ).toString('utf-8');
+    
+    const credPath = path.join(__dirname, '..', 'credentials.json');
+    fs.writeFileSync(credPath, credentials);
+    
+    // Set the path for Google API
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = credPath;
+    console.log('Google credentials loaded from GOOGLE_CREDENTIALS_BASE64');
+  } catch (error) {
+    console.error('Failed to decode GOOGLE_CREDENTIALS_BASE64:', error);
+  }
+}
 
 /**
  * Validates that a required environment variable is present

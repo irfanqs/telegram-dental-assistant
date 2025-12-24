@@ -3,6 +3,7 @@ node_modules/
 
 # Environment variables
 .env
+gen-lang-client-0665180754-efcfb0976a87.json
 
 # Google Service Account credentials
 credentials.json
