@@ -22,6 +22,7 @@ const FIELDS = [
   { key: 'biayaDokter', label: 'Biaya dokter' },
   { key: 'biayaLab', label: 'Biaya lab' },
   { key: 'totalBiaya', label: 'Total Biaya' },
+  { key: 'letakKaries', label: 'Letak Karies', type: 'dropdown' },
   { key: 'keteranganLain', label: 'Keterangan lain' }
 ];
 
@@ -50,7 +51,8 @@ const MESSAGES = {
   ERROR_ALREADY_HAS_SESSION: 'Anda sudah memiliki sesi aktif. Selesaikan atau gunakan /exit untuk membatalkan.',
   
   // Instructions
-  SELECT_FIELD_TO_EDIT: 'Pilih field yang ingin diubah:'
+  SELECT_FIELD_TO_EDIT: 'Pilih field yang ingin diubah:',
+  SELECT_LETAK_KARIES: 'Pilih letak karies:'
 };
 
 // Callback data constants for inline keyboards
@@ -69,7 +71,10 @@ const CALLBACK_DATA = {
   EDIT_BACK: 'edit_back',
   
   // Karies callbacks prefix
-  KARIES_PREFIX: 'karies_'
+  KARIES_PREFIX: 'karies_',
+  
+  // Field input karies callbacks prefix
+  FIELD_KARIES_PREFIX: 'field_karies_'
 };
 
 // Karies types with their image file paths

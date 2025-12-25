@@ -4,14 +4,14 @@ Bot Telegram untuk pencatatan data pasien yang terintegrasi dengan Google Spread
 
 ## Fitur
 
-- ✅ Input data pasien melalui percakapan interaktif
-- ✅ 18 field data pasien yang terstruktur
-- ✅ Konfirmasi data sebelum disimpan
-- ✅ Edit field sebelum submit
-- ✅ Auto-increment ID dan timestamp otomatis
-- ✅ Multi-user concurrent access
-- ✅ Session management untuk melanjutkan input yang tertunda
-- ✅ Integrasi langsung dengan Google Sheets
+- Input data pasien melalui percakapan interaktif
+- 18 field data pasien yang terstruktur
+- Konfirmasi data sebelum disimpan
+- Edit field sebelum submit
+- Auto-increment ID dan timestamp otomatis
+- Multi-user concurrent access
+- Session management untuk melanjutkan input yang tertunda
+- Integrasi langsung dengan Google Sheets
 
 ## Prerequisites
 
@@ -70,7 +70,8 @@ Ikuti panduan lengkap di [SETUP_GOOGLE.md](./SETUP_GOOGLE.md) untuk:
    - Q1: `Biaya dokter`
    - R1: `Biaya lab`
    - S1: `Total Biaya`
-   - T1: `Keterangan lain`
+   - T1: `Letak Karies`
+   - U1: `Keterangan lain`
 
 3. Copy Spreadsheet ID dari URL (bagian setelah `/d/` dan sebelum `/edit`)
    ```
@@ -136,6 +137,7 @@ Bot akan mulai berjalan dan siap menerima perintah di Telegram.
    - Biaya dokter
    - Biaya lab
    - Total Biaya
+   - **Letak Karies** (dropdown: D-car, L-car, M-car, O-car, V-car)
    - Keterangan lain
 
 3. Setelah semua field diisi, bot akan menampilkan ringkasan data

@@ -188,6 +188,10 @@ class TelegramPatientBot {
       else if (data.startsWith(CALLBACK_DATA.KARIES_PREFIX)) {
         await this.handleKariesSelection(chatId, userId, data);
       }
+      // Handle field input karies selection callbacks
+      else if (data.startsWith(CALLBACK_DATA.FIELD_KARIES_PREFIX)) {
+        await this.handleFieldKariesSelection(chatId, userId, data);
+      }
     } catch (error) {
       console.error('Error in handleCallbackQuery:', error);
       await this.sendErrorMessage(chatId, 'Terjadi kesalahan. Silakan coba lagi.');
@@ -211,9 +215,14 @@ class TelegramPatientBot {
       const currentField = this.sessionManager.getCurrentField(userId);
       
       if (currentField) {
-        // Resume from current field
-        const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${currentField.label.toLowerCase()}`;
-        await this.bot.sendMessage(chatId, prompt);
+        // Check if current field is dropdown type (letak karies)
+        if (currentField.type === 'dropdown' && currentField.key === 'letakKaries') {
+          await this.showLetakKariesDropdown(chatId, userId);
+        } else {
+          // Resume from current field
+          const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${currentField.label.toLowerCase()}`;
+          await this.bot.sendMessage(chatId, prompt);
+        }
       } else {
         // All fields collected, show confirmation summary
         await this.showConfirmationSummary(chatId, userId);
@@ -340,6 +349,16 @@ class TelegramPatientBot {
 
       // Check if user is in editing state
       if (session.state === 'editing' && session.editingField) {
+        // Check if editing field is dropdown type
+        const { FIELDS } = require('./constants');
+        const field = FIELDS.find(f => f.key === session.editingField);
+        
+        if (field && field.type === 'dropdown' && field.key === 'letakKaries') {
+          // For dropdown fields, user should use the dropdown, not text input
+          await this.bot.sendMessage(chatId, 'Silakan pilih dari dropdown yang tersedia.');
+          return;
+        }
+        
         // Update field value with new input
         this.sessionManager.updateField(userId, session.editingField, msg.text);
         
@@ -370,9 +389,14 @@ class TelegramPatientBot {
       const nextField = this.sessionManager.getCurrentField(userId);
       
       if (nextField) {
-        // More fields remain: send next field prompt
-        const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label.toLowerCase()}`;
-        await this.bot.sendMessage(chatId, prompt);
+        // Check if next field is dropdown type (letak karies)
+        if (nextField.type === 'dropdown' && nextField.key === 'letakKaries') {
+          await this.showLetakKariesDropdown(chatId, userId);
+        } else {
+          // More fields remain: send next field prompt
+          const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label.toLowerCase()}`;
+          await this.bot.sendMessage(chatId, prompt);
+        }
       } else {
         // All fields collected: show confirmation summary
         await this.showConfirmationSummary(chatId, userId);
@@ -574,11 +598,93 @@ class TelegramPatientBot {
       // Store selected field in session for editing
       session.editingField = fieldKey;
 
-      // Send prompt for new input
-      const prompt = `${MESSAGES.EDIT_FIELD_PROMPT_PREFIX}${field.label.toLowerCase()}${MESSAGES.EDIT_FIELD_PROMPT_SUFFIX}`;
-      await this.bot.sendMessage(chatId, prompt);
+      // Check if field is dropdown type (letak karies)
+      if (field.type === 'dropdown' && field.key === 'letakKaries') {
+        await this.showLetakKariesDropdown(chatId, userId);
+      } else {
+        // Send prompt for new input
+        const prompt = `${MESSAGES.EDIT_FIELD_PROMPT_PREFIX}${field.label.toLowerCase()}${MESSAGES.EDIT_FIELD_PROMPT_SUFFIX}`;
+        await this.bot.sendMessage(chatId, prompt);
+      }
     } catch (error) {
       console.error('Error in handleEditFieldSelection:', error);
+      await this.sendErrorMessage(chatId, 'Terjadi kesalahan. Silakan coba lagi.');
+    }
+  }
+
+  /**
+   * Show letak karies dropdown during field input
+   * @param {number} chatId - Telegram chat ID
+   * @param {number} userId - Telegram user ID
+   */
+  async showLetakKariesDropdown(chatId, userId) {
+    try {
+      // Create inline keyboard with karies options
+      const keyboard = KARIES_TYPES.map(karies => [
+        { 
+          text: karies.label, 
+          callback_data: `${CALLBACK_DATA.FIELD_KARIES_PREFIX}${karies.key}` 
+        }
+      ]);
+
+      const options = {
+        reply_markup: {
+          inline_keyboard: keyboard
+        }
+      };
+
+      await this.bot.sendMessage(chatId, MESSAGES.SELECT_LETAK_KARIES, options);
+    } catch (error) {
+      console.error('Error in showLetakKariesDropdown:', error);
+      await this.sendErrorMessage(chatId, 'Terjadi kesalahan. Silakan coba lagi.');
+    }
+  }
+
+  /**
+   * Handle field karies selection callback during data input
+   * @param {number} chatId - Telegram chat ID
+   * @param {number} userId - Telegram user ID
+   * @param {string} callbackData - Callback data containing karies key
+   */
+  async handleFieldKariesSelection(chatId, userId, callbackData) {
+    try {
+      const session = this.sessionManager.getSession(userId);
+      
+      if (!session) {
+        await this.bot.sendMessage(chatId, MESSAGES.ERROR_NO_ACTIVE_SESSION);
+        return;
+      }
+
+      // Extract karies key from callback data
+      const kariesKey = callbackData.replace(CALLBACK_DATA.FIELD_KARIES_PREFIX, '');
+      
+      // Find the karies type
+      const karies = KARIES_TYPES.find(k => k.key === kariesKey);
+      
+      if (!karies) {
+        await this.sendErrorMessage(chatId, 'Jenis karies tidak ditemukan.');
+        return;
+      }
+
+      // Store the selected karies label in session
+      this.sessionManager.updateField(userId, 'letakKaries', karies.label);
+
+      // Increment field index
+      this.incrementFieldIndex(userId);
+
+      // Check if more fields remain
+      const nextField = this.sessionManager.getCurrentField(userId);
+      
+      if (nextField) {
+        // More fields remain: send next field prompt
+        const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label.toLowerCase()}`;
+        await this.bot.sendMessage(chatId, prompt);
+      } else {
+        // All fields collected: show confirmation summary
+        await this.showConfirmationSummary(chatId, userId);
+      }
+    } catch (error) {
+      console.error('Error in handleFieldKariesSelection:', error);
       await this.sendErrorMessage(chatId, 'Terjadi kesalahan. Silakan coba lagi.');
     }
   }
