@@ -29,7 +29,7 @@ const FIELDS = [
 // Bot messages
 const MESSAGES = {
   // Welcome messages
-  ASK_DOCTOR_NAME: 'Masukkan nama dokter pemeriksa',
+  ASK_DOCTOR_NAME: 'Masukkan nama dokter pemeriksa:',
   WELCOME: 'Hai dokter {name}, semangat kerjanya hari ini🤗!\nKetik /newpatient untuk memulai pendataan.',
   CONTINUE_SESSION: 'Anda memiliki input data yang belum selesai. Ingin melanjutkan?',
   
