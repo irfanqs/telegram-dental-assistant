@@ -5,25 +5,25 @@
 
 // Patient data fields in the exact order they should be collected
 const FIELDS = [
-  { key: 'namaPasien', label: 'Nama Pasien' },
-  { key: 'nik', label: 'NIK / No. RM' },
-  { key: 'jenisKelamin', label: 'Jenis Kelamin' },
-  { key: 'usia', label: 'Usia' },
-  { key: 'alamat', label: 'Alamat' },
-  { key: 'noTelepon', label: 'No. Telepon' },
-  { key: 'dokterPemeriksa', label: 'Dokter Pemeriksa' },
-  { key: 'diagnosa', label: 'Diagnosa' },
-  { key: 'tindakan', label: 'Tindakan' },
-  { key: 'penyakitLainnya', label: 'Penyakit lainnya' },
-  { key: 'golonganDarah', label: 'Golongan darah' },
-  { key: 'tekananDarah', label: 'Tekanan Darah' },
-  { key: 'gigiDikeluhkan', label: 'Gigi yang dikeluhkan' },
-  { key: 'perawatanPersetujuan', label: 'Perawatan Persetujuan' },
-  { key: 'biayaDokter', label: 'Biaya dokter' },
-  { key: 'biayaLab', label: 'Biaya lab' },
-  { key: 'totalBiaya', label: 'Total Biaya' },
-  { key: 'letakKaries', label: 'Letak Karies', type: 'dropdown' },
-  { key: 'keteranganLain', label: 'Keterangan lain' }
+  { key: 'namaPasien', label: 'Nama Pasien:' },
+  { key: 'nik', label: 'NIK / No. RM:' },
+  { key: 'jenisKelamin', label: 'Jenis Kelamin:' },
+  { key: 'usia', label: 'Usia:' },
+  { key: 'alamat', label: 'Alamat:' },
+  { key: 'noTelepon', label: 'No. Telepon:' },
+  { key: 'dokterPemeriksa', label: 'Dokter Pemeriksa:' },
+  { key: 'diagnosa', label: 'Diagnosa:' },
+  { key: 'tindakan', label: 'Tindakan:' },
+  { key: 'penyakitLainnya', label: 'Penyakit lainnya:' },
+  { key: 'golonganDarah', label: 'Golongan darah:' },
+  { key: 'tekananDarah', label: 'Tekanan Darah:' },
+  { key: 'gigiDikeluhkan', label: 'Gigi yang dikeluhkan:' },
+  { key: 'perawatanPersetujuan', label: 'Perawatan Persetujuan:' },
+  { key: 'biayaDokter', label: 'Biaya dokter:' },
+  { key: 'biayaLab', label: 'Biaya lab:' },
+  { key: 'totalBiaya', label: 'Total Biaya:' },
+  { key: 'letakKaries', label: 'Letak Karies:', type: 'dropdown' },
+  { key: 'keteranganLain', label: 'Keterangan lain:' }
 ];
 
 // Bot messages
@@ -42,7 +42,7 @@ const MESSAGES = {
   // Confirmations
   SUMMARY_HEADER: '📋 *Ringkasan Data Pasien*\n\nSilakan periksa data berikut:\n\n',
   SUMMARY_QUESTION: '\nApakah data sudah benar?',
-  SUCCESS: '✅ Data berhasil disimpan ke Google Sheets!',
+  SUCCESS: '✅ Data berhasil disimpan ke Google Sheets!\n\nKetik /start untuk memulai ulang pencatatan.',
   CANCELLED: '❌ Input data dibatalkan. Data tidak disimpan.',
   
   // Errors

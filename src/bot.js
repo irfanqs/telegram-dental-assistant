@@ -220,7 +220,7 @@ class TelegramPatientBot {
           await this.showLetakKariesDropdown(chatId, userId);
         } else {
           // Resume from current field
-          const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${currentField.label.toLowerCase()}`;
+          const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${currentField.label}`;
           await this.bot.sendMessage(chatId, prompt);
         }
       } else {
@@ -394,7 +394,7 @@ class TelegramPatientBot {
           await this.showLetakKariesDropdown(chatId, userId);
         } else {
           // More fields remain: send next field prompt
-          const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label.toLowerCase()}`;
+          const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label}`;
           await this.bot.sendMessage(chatId, prompt);
         }
       } else {
@@ -603,7 +603,7 @@ class TelegramPatientBot {
         await this.showLetakKariesDropdown(chatId, userId);
       } else {
         // Send prompt for new input
-        const prompt = `${MESSAGES.EDIT_FIELD_PROMPT_PREFIX}${field.label.toLowerCase()}${MESSAGES.EDIT_FIELD_PROMPT_SUFFIX}`;
+        const prompt = `${MESSAGES.EDIT_FIELD_PROMPT_PREFIX}${field.label}${MESSAGES.EDIT_FIELD_PROMPT_SUFFIX}`;
         await this.bot.sendMessage(chatId, prompt);
       }
     } catch (error) {
@@ -677,7 +677,7 @@ class TelegramPatientBot {
       
       if (nextField) {
         // More fields remain: send next field prompt
-        const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label.toLowerCase()}`;
+        const prompt = `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label}`;
         await this.bot.sendMessage(chatId, prompt);
       } else {
         // All fields collected: show confirmation summary
