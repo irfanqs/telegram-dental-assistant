@@ -5,36 +5,36 @@
 
 // Patient data fields in the exact order they should be collected
 const FIELDS = [
-  { key: 'namaPasien', label: 'Nama Pasien:' },
-  { key: 'nik', label: 'NIK / No. RM:' },
-  { key: 'jenisKelamin', label: 'Jenis Kelamin:' },
-  { key: 'usia', label: 'Usia:' },
-  { key: 'alamat', label: 'Alamat:' },
-  { key: 'noTelepon', label: 'No. Telepon:' },
-  { key: 'dokterPemeriksa', label: 'Dokter Pemeriksa:' },
-  { key: 'diagnosa', label: 'Diagnosa:' },
-  { key: 'tindakan', label: 'Tindakan:' },
-  { key: 'penyakitLainnya', label: 'Penyakit lainnya:' },
-  { key: 'golonganDarah', label: 'Golongan darah:' },
-  { key: 'tekananDarah', label: 'Tekanan Darah:' },
-  { key: 'gigiDikeluhkan', label: 'Gigi yang dikeluhkan:' },
-  { key: 'perawatanPersetujuan', label: 'Perawatan Persetujuan:' },
-  { key: 'biayaDokter', label: 'Biaya dokter:' },
-  { key: 'biayaLab', label: 'Biaya lab:' },
-  { key: 'totalBiaya', label: 'Total Biaya:' },
-  { key: 'letakKaries', label: 'Letak Karies:', type: 'dropdown' },
-  { key: 'keteranganLain', label: 'Keterangan lain:' }
+  { key: 'namaPasien', label: 'Nama Pasien' },
+  { key: 'nik', label: 'NIK / No. RM' },
+  { key: 'jenisKelamin', label: 'Jenis Kelamin' },
+  { key: 'usia', label: 'Usia' },
+  { key: 'alamat', label: 'Alamat' },
+  { key: 'noTelepon', label: 'No. Telepon' },
+  { key: 'dokterPemeriksa', label: 'Dokter Pemeriksa' },
+  { key: 'diagnosa', label: 'Diagnosa' },
+  { key: 'tindakan', label: 'Tindakan' },
+  { key: 'penyakitLainnya', label: 'penyakit lainnya' },
+  { key: 'golonganDarah', label: 'Golongan Darah' },
+  { key: 'tekananDarah', label: 'Tekanan Darah' },
+  { key: 'gigiDikeluhkan', label: 'Gigi yang dikeluhkan' },
+  { key: 'perawatanPersetujuan', label: 'Perawatan Persetujuan' },
+  { key: 'biayaDokter', label: 'Biaya Dokter' },
+  { key: 'biayaLab', label: 'Biaya Lab' },
+  { key: 'totalBiaya', label: 'Total Biaya' },
+  { key: 'letakKaries', label: 'Letak Karies', type: 'dropdown' },
+  { key: 'keteranganLain', label: 'Keterangan lain' }
 ];
 
 // Bot messages
 const MESSAGES = {
   // Welcome messages
-  ASK_DOCTOR_NAME: 'Masukkan nama dokter pemeriksa:',
+  ASK_DOCTOR_NAME: 'Masukkan Nama Dokter Pemeriksa',
   WELCOME: 'Hai dokter {name}, semangat kerjanya hari ini🤗!\nKetik /newpatient untuk memulai pendataan.',
   CONTINUE_SESSION: 'Anda memiliki input data yang belum selesai. Ingin melanjutkan?',
   
   // Prompts
-  FIRST_FIELD_PROMPT: 'Masukkan nama pasien',
+  FIRST_FIELD_PROMPT: 'Masukkan nama pasien:',
   FIELD_PROMPT_PREFIX: 'Masukkan ',
   EDIT_FIELD_PROMPT_PREFIX: 'Masukkan ',
   EDIT_FIELD_PROMPT_SUFFIX: ' yang baru',
@@ -47,7 +47,7 @@ const MESSAGES = {
   
   // Errors
   ERROR_SAVE_FAILED: 'Data gagal di simpan di google sheets',
-  ERROR_NO_ACTIVE_SESSION: 'Tidak ada sesi aktif. Gunakan /newpatient untuk memulai.',
+  ERROR_NO_ACTIVE_SESSION: 'Tidak ada sesi aktif. Ketik /start untuk memulai.',
   ERROR_ALREADY_HAS_SESSION: 'Anda sudah memiliki sesi aktif. Selesaikan atau gunakan /exit untuk membatalkan.',
   
   // Instructions
