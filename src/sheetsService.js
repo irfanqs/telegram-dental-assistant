@@ -129,11 +129,58 @@ class SheetsService {
         }
       });
 
+      // Get the row number that was just inserted
+      const updatedRange = response.data.updates.updatedRange;
+      const rowNumber = parseInt(updatedRange.match(/\d+$/)[0]);
+
+      // If there's an image URL for Letak Karies, insert IMAGE formula
+      if (patientData.letakKariesImageUrl) {
+        await this.insertImageFormula(rowNumber, patientData.letakKariesImageUrl);
+      }
+
       return { success: true, id, range: response.data.updates.updatedRange };
     } catch (error) {
       // Requirements: 7.6
       console.error('Error appending patient data to Google Sheets:', error);
       return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Insert IMAGE formula to a specific cell
+   * @param {number} rowNumber - Row number in the spreadsheet
+   * @param {string} imageUrl - URL of the image
+   */
+  async insertImageFormula(rowNumber, imageUrl) {
+    try {
+      // Find the column index for 'letakKaries' field
+      const letakKariesIndex = FIELDS.findIndex(f => f.key === 'letakKaries');
+      
+      if (letakKariesIndex === -1) {
+        console.error('letakKaries field not found in FIELDS');
+        return;
+      }
+
+      // Column index: +2 because we have ID and Date columns before FIELDS
+      const columnIndex = letakKariesIndex + 2;
+      
+      // Convert column index to letter (0=A, 1=B, etc.)
+      const columnLetter = String.fromCharCode(65 + columnIndex);
+      
+      // Insert IMAGE formula
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.spreadsheetId,
+        range: `${columnLetter}${rowNumber}`,
+        valueInputOption: 'USER_ENTERED', // Important: USER_ENTERED to process formula
+        resource: {
+          values: [[`=IMAGE("${imageUrl}")`]]
+        }
+      });
+
+      console.log(`Image formula inserted at ${columnLetter}${rowNumber}`);
+    } catch (error) {
+      console.error('Error inserting image formula:', error);
+      // Don't throw error, just log it - data is already saved
     }
   }
 }

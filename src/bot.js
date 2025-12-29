@@ -666,8 +666,9 @@ class TelegramPatientBot {
         return;
       }
 
-      // Store the selected karies label in session
+      // Store the selected karies label and imageUrl in session
       this.sessionManager.updateField(userId, 'letakKaries', karies.label);
+      this.sessionManager.updateField(userId, 'letakKariesImageUrl', karies.imageUrl);
 
       // Increment field index
       this.incrementFieldIndex(userId);

@@ -79,11 +79,36 @@ const CALLBACK_DATA = {
 
 // Karies types with their image file paths
 const KARIES_TYPES = [
-  { key: 'D', label: 'D-car', file: 'D-car.jpeg' },
-  { key: 'L', label: 'L-car', file: 'L-car.jpeg' },
-  { key: 'M', label: 'M-car', file: 'M-car.jpeg' },
-  { key: 'O', label: 'O-car', file: 'O-car.jpeg' },
-  { key: 'V', label: 'V-car', file: 'V-car.jpeg' }
+  { 
+    key: 'D', 
+    label: 'D-car', 
+    file: 'D-car.jpeg',
+    imageUrl: 'https://drive.google.com/uc?export=view&id=1RUcHKcumJLI33BdEI1NAmYQoRJYnV-hI'
+  },
+  { 
+    key: 'L', 
+    label: 'L-car', 
+    file: 'L-car.jpeg',
+    imageUrl: 'https://drive.google.com/uc?export=view&id=1YqkM3QxMjgAX-jj2ud3DutY8O0CMty5x'
+  },
+  { 
+    key: 'M', 
+    label: 'M-car', 
+    file: 'M-car.jpeg',
+    imageUrl: 'https://drive.google.com/uc?export=view&id=1B0-vG7584zjxlM0EMr3brUC6o-Ma4u-M'
+  },
+  { 
+    key: 'O', 
+    label: 'O-car', 
+    file: 'O-car.jpeg',
+    imageUrl: 'https://drive.google.com/uc?export=view&id=18tO2WkHWCwIUr09oDXY9x0sIQVSBJ2W0'
+  },
+  { 
+    key: 'V', 
+    label: 'V-car', 
+    file: 'V-car.jpeg',
+    imageUrl: 'https://drive.google.com/uc?export=view&id=1qg_M5fEU4NX6vG8vZLyCIo9dC_pTdnPt'
+  }
 ];
 
 module.exports = {
