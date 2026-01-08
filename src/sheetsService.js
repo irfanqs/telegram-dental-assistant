@@ -11,7 +11,8 @@ class SheetsService {
     this.spreadsheetId = spreadsheetId;
     this.credentialsPath = credentialsPath;
     this.sheets = null;
-    this.noCounter = 0; // For auto-increment No
+    this.noCounter = 0; // For auto-increment No (per row)
+    this.patientCounter = 0; // For auto-increment Record ID (per patient)
     this.initializationPromise = this._initialize();
   }
 
@@ -25,31 +26,42 @@ class SheetsService {
       const authClient = await auth.getClient();
       this.sheets = google.sheets({ version: 'v4', auth: authClient });
       
-      await this._initializeNoCounter();
+      await this._initializeCounters();
     } catch (error) {
       console.error('Failed to initialize Google Sheets API:', error);
       throw error;
     }
   }
 
-  async _initializeNoCounter() {
+  async _initializeCounters() {
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: 'A:A',
+        range: 'A:B', // Get No and Record ID columns
       });
 
       const rows = response.data.values;
       if (rows && rows.length > 1) {
-        const lastRow = rows[rows.length - 1];
-        const lastNo = parseInt(lastRow[0], 10);
+        // Get last No (column A)
+        const lastNo = parseInt(rows[rows.length - 1][0], 10);
         if (!isNaN(lastNo)) {
           this.noCounter = lastNo;
         }
+
+        // Get last unique Record ID (column B) and extract number
+        const recordIds = rows.slice(1).map(row => row[1]).filter(Boolean);
+        if (recordIds.length > 0) {
+          const lastRecordId = recordIds[recordIds.length - 1];
+          const match = lastRecordId.match(/P-(\d+)/);
+          if (match) {
+            this.patientCounter = parseInt(match[1], 10);
+          }
+        }
       }
     } catch (error) {
-      console.log('Starting No counter from 0');
+      console.log('Starting counters from 0');
       this.noCounter = 0;
+      this.patientCounter = 0;
     }
   }
 
@@ -76,14 +88,11 @@ class SheetsService {
   }
 
   /**
-   * Generate unique Record ID
+   * Generate Record ID based on patient counter (P-001, P-002, etc.)
    */
   generateRecordId() {
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const timeStr = now.toISOString().slice(11, 19).replace(/:/g, '');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `REC-${dateStr}-${timeStr}-${random}`;
+    this.patientCounter++;
+    return `P-${String(this.patientCounter).padStart(3, '0')}`;
   }
 
   /**
@@ -120,6 +129,7 @@ class SheetsService {
     try {
       await this.initializationPromise;
 
+      // Generate Record ID for this patient (same for all teeth)
       const recordId = this.generateRecordId();
       const timestamp = this.getCurrentTime();
       const rows = [];
