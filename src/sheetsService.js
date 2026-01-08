@@ -1,30 +1,20 @@
 /**
  * Google Sheets Service for Telegram Patient Bot
  * Handles interaction with Google Sheets API
- * Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6
  */
 
 const { google } = require('googleapis');
-const { FIELDS } = require('./constants');
+const { PATIENT_FIELDS, TEETH_FIELDS, KONDISI_GIGI_TYPES, KARIES_TYPES } = require('./constants');
 
 class SheetsService {
-  /**
-   * Initialize SheetsService with spreadsheet ID and authentication
-   * @param {string} spreadsheetId - Google Spreadsheet ID
-   * @param {string} credentialsPath - Path to Google Service Account JSON file
-   */
   constructor(spreadsheetId, credentialsPath) {
     this.spreadsheetId = spreadsheetId;
     this.credentialsPath = credentialsPath;
     this.sheets = null;
-    this.idCounter = 0; // For generating auto-increment IDs
+    this.noCounter = 0; // For auto-increment No
     this.initializationPromise = this._initialize();
   }
 
-  /**
-   * Initialize Google Sheets API client with service account authentication
-   * @private
-   */
   async _initialize() {
     try {
       const auth = new google.auth.GoogleAuth({
@@ -35,153 +25,188 @@ class SheetsService {
       const authClient = await auth.getClient();
       this.sheets = google.sheets({ version: 'v4', auth: authClient });
       
-      // Initialize ID counter by reading the last row
-      await this._initializeIdCounter();
+      await this._initializeNoCounter();
     } catch (error) {
       console.error('Failed to initialize Google Sheets API:', error);
       throw error;
     }
   }
 
-  /**
-   * Initialize the ID counter by reading the last ID from the spreadsheet
-   * @private
-   */
-  async _initializeIdCounter() {
+  async _initializeNoCounter() {
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: 'A:A', // Get all values in column A (ID column)
+        range: 'A:A',
       });
 
       const rows = response.data.values;
       if (rows && rows.length > 1) {
-        // Skip header row, get last ID
         const lastRow = rows[rows.length - 1];
-        const lastId = parseInt(lastRow[0], 10);
-        if (!isNaN(lastId)) {
-          this.idCounter = lastId;
+        const lastNo = parseInt(lastRow[0], 10);
+        if (!isNaN(lastNo)) {
+          this.noCounter = lastNo;
         }
       }
     } catch (error) {
-      // If sheet is empty or error occurs, start from 0
-      console.log('Starting ID counter from 0');
-      this.idCounter = 0;
+      console.log('Starting No counter from 0');
+      this.noCounter = 0;
     }
   }
 
   /**
-   * Get current date formatted as DD/MM/YYYY
-   * Requirements: 7.2
-   * @returns {string} Current date in DD/MM/YYYY format
+   * Get current time formatted as HH:mm:ss
    */
-  getCurrentDate() {
+  getCurrentTime() {
     const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-    return `${day}/${month}/${year}`;
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
   }
 
   /**
-   * Generate next auto-increment ID
-   * Requirements: 7.1
-   * @returns {number} Next ID
+   * Generate unique Record ID
    */
-  getNextId() {
-    this.idCounter += 1;
-    return this.idCounter;
+  generateRecordId() {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const timeStr = now.toISOString().slice(11, 19).replace(/:/g, '');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `REC-${dateStr}-${timeStr}-${random}`;
+  }
+
+  /**
+   * Get next auto-increment No
+   */
+  getNextNo() {
+    this.noCounter += 1;
+    return this.noCounter;
+  }
+
+  /**
+   * Get image URL for kondisi gigi
+   */
+  getKondisiGigiImageUrl(kondisiLabel) {
+    const kondisi = KONDISI_GIGI_TYPES.find(k => k.label === kondisiLabel);
+    return kondisi ? kondisi.imageUrl : null;
+  }
+
+  /**
+   * Get image URL for letak karies
+   */
+  getLetakKariesImageUrl(kariesLabel) {
+    const karies = KARIES_TYPES.find(k => k.label === kariesLabel);
+    return karies ? karies.imageUrl : null;
   }
 
   /**
    * Append patient data to Google Spreadsheet
-   * Requirements: 7.3, 7.4, 7.5, 7.6
-   * @param {Object} patientData - Patient data object with field keys
-   * @returns {Promise<{success: boolean, error?: string}>} Result of the operation
+   * Creates one row per tooth entry
+   * @param {Object} patientData - Patient data object
+   * @param {Array} teethData - Array of teeth data objects
    */
-  async appendPatientData(patientData) {
+  async appendPatientData(patientData, teethData) {
     try {
-      // Ensure initialization is complete
       await this.initializationPromise;
 
-      // Generate ID and date
-      const id = this.getNextId();
-      const date = this.getCurrentDate();
+      const recordId = this.generateRecordId();
+      const timestamp = this.getCurrentTime();
+      const rows = [];
+      const imageUpdates = []; // Track cells that need IMAGE formula
 
-      // Build row data: [ID, Date, ...patient fields in order]
-      // Requirements: 7.3, 7.4
-      const rowData = [id, date];
-      
-      // Add patient data fields in the exact order defined in FIELDS
-      FIELDS.forEach(field => {
-        rowData.push(patientData[field.key] || '');
-      });
-
-      // Append to spreadsheet
-      // Requirements: 7.5
-      const response = await this.sheets.spreadsheets.values.append({
+      // Calculate starting row (current last row + 1)
+      const currentRows = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: 'A:A', // Start from column A
+        range: 'A:A',
+      });
+      let startRow = (currentRows.data.values ? currentRows.data.values.length : 0) + 1;
+
+      // Create one row per tooth
+      for (let i = 0; i < teethData.length; i++) {
+        const tooth = teethData[i];
+        const no = this.getNextNo();
+        const rowNumber = startRow + i;
+        
+        // Build row: No, Record ID, Timestamp, Patient Fields..., Teeth Fields...
+        const rowData = [no, recordId, timestamp];
+        
+        // Add patient data
+        PATIENT_FIELDS.forEach(field => {
+          rowData.push(patientData[field.key] || '');
+        });
+        
+        // Add teeth data (text values first, will update with images later)
+        TEETH_FIELDS.forEach(field => {
+          rowData.push(tooth[field.key] || '');
+        });
+
+        rows.push(rowData);
+
+        // Track image updates for kondisiGigi
+        const kondisiImageUrl = this.getKondisiGigiImageUrl(tooth.kondisiGigi);
+        if (kondisiImageUrl) {
+          // Column index: 3 (No, RecordID, Timestamp) + PATIENT_FIELDS.length + index of kondisiGigi in TEETH_FIELDS
+          const kondisiColIndex = 3 + PATIENT_FIELDS.length + TEETH_FIELDS.findIndex(f => f.key === 'kondisiGigi');
+          imageUpdates.push({
+            row: rowNumber,
+            col: kondisiColIndex,
+            imageUrl: kondisiImageUrl
+          });
+        }
+
+        // Track image updates for letakKaries
+        const kariesImageUrl = this.getLetakKariesImageUrl(tooth.letakKaries);
+        if (kariesImageUrl) {
+          const kariesColIndex = 3 + PATIENT_FIELDS.length + TEETH_FIELDS.findIndex(f => f.key === 'letakKaries');
+          imageUpdates.push({
+            row: rowNumber,
+            col: kariesColIndex,
+            imageUrl: kariesImageUrl
+          });
+        }
+      }
+
+      // Append all rows (text values)
+      await this.sheets.spreadsheets.values.append({
+        spreadsheetId: this.spreadsheetId,
+        range: 'A:A',
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
         resource: {
-          values: [rowData]
+          values: rows
         }
       });
 
-      // Get the row number that was just inserted
-      const updatedRange = response.data.updates.updatedRange;
-      const rowNumber = parseInt(updatedRange.match(/\d+$/)[0]);
-
-      // If there's an image URL for Letak Karies, insert IMAGE formula
-      if (patientData.letakKariesImageUrl) {
-        await this.insertImageFormula(rowNumber, patientData.letakKariesImageUrl);
+      // Update cells with IMAGE formulas
+      for (const update of imageUpdates) {
+        const colLetter = this.columnIndexToLetter(update.col);
+        await this.sheets.spreadsheets.values.update({
+          spreadsheetId: this.spreadsheetId,
+          range: `${colLetter}${update.row}`,
+          valueInputOption: 'USER_ENTERED',
+          resource: {
+            values: [[`=IMAGE("${update.imageUrl}")`]]
+          }
+        });
       }
 
-      return { success: true, id, range: response.data.updates.updatedRange };
+      return { success: true, recordId, rowsInserted: rows.length };
     } catch (error) {
-      // Requirements: 7.6
       console.error('Error appending patient data to Google Sheets:', error);
       return { success: false, error: error.message };
     }
   }
 
   /**
-   * Insert IMAGE formula to a specific cell
-   * @param {number} rowNumber - Row number in the spreadsheet
-   * @param {string} imageUrl - URL of the image
+   * Convert column index to letter (0=A, 1=B, ..., 26=AA, etc.)
    */
-  async insertImageFormula(rowNumber, imageUrl) {
-    try {
-      // Find the column index for 'letakKaries' field
-      const letakKariesIndex = FIELDS.findIndex(f => f.key === 'letakKaries');
-      
-      if (letakKariesIndex === -1) {
-        console.error('letakKaries field not found in FIELDS');
-        return;
-      }
-
-      // Column index: +2 because we have ID and Date columns before FIELDS
-      const columnIndex = letakKariesIndex + 2;
-      
-      // Convert column index to letter (0=A, 1=B, etc.)
-      const columnLetter = String.fromCharCode(65 + columnIndex);
-      
-      // Insert IMAGE formula
-      await this.sheets.spreadsheets.values.update({
-        spreadsheetId: this.spreadsheetId,
-        range: `${columnLetter}${rowNumber}`,
-        valueInputOption: 'USER_ENTERED', // Important: USER_ENTERED to process formula
-        resource: {
-          values: [[`=IMAGE("${imageUrl}")`]]
-        }
-      });
-
-      console.log(`Image formula inserted at ${columnLetter}${rowNumber}`);
-    } catch (error) {
-      console.error('Error inserting image formula:', error);
-      // Don't throw error, just log it - data is already saved
+  columnIndexToLetter(index) {
+    let letter = '';
+    while (index >= 0) {
+      letter = String.fromCharCode((index % 26) + 65) + letter;
+      index = Math.floor(index / 26) - 1;
     }
+    return letter;
   }
 }
 

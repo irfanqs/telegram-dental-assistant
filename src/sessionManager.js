@@ -3,7 +3,7 @@
  * Manages user sessions with in-memory storage
  */
 
-const { FIELDS } = require('./constants');
+const { PATIENT_FIELDS } = require('./constants');
 
 /**
  * SessionManager class handles user session lifecycle
@@ -11,8 +11,6 @@ const { FIELDS } = require('./constants');
  */
 class SessionManager {
   constructor() {
-    // In-memory storage using Map
-    // Key: userId (number), Value: session object
     this.sessions = new Map();
   }
 
@@ -25,15 +23,30 @@ class SessionManager {
   createSession(userId, doctorName = null) {
     const session = {
       userId,
-      currentFieldIndex: 0,
-      data: {},
-      state: 'collecting',
-      doctorName: doctorName // Store doctor name from /start
+      state: 'collecting_patient', // collecting_patient, collecting_teeth, confirming, editing
+      doctorName: doctorName,
+      
+      // Patient data (collected once)
+      patientFieldIndex: 0,
+      patientData: {},
+      
+      // Teeth data (can be multiple)
+      teethFieldIndex: 0,
+      currentTooth: {},
+      teethData: [],
+      
+      // Editing state
+      editingField: null
     };
     
-    // If doctor name is provided, pre-fill it in data
+    // If doctor name is provided, pre-fill it and skip that field
     if (doctorName) {
-      session.data.dokterPemeriksa = doctorName;
+      session.patientData.dokterPemeriksa = doctorName;
+      // Find index of dokterPemeriksa and set patientFieldIndex to skip it if it's the current field
+      const dokterIndex = PATIENT_FIELDS.findIndex(f => f.key === 'dokterPemeriksa');
+      if (dokterIndex === 0) {
+        session.patientFieldIndex = 1;
+      }
     }
     
     this.sessions.set(userId, session);
@@ -47,23 +60,6 @@ class SessionManager {
    */
   getSession(userId) {
     return this.sessions.get(userId) || null;
-  }
-
-  /**
-   * Updates a specific field in the user's session
-   * @param {number} userId - Telegram user ID
-   * @param {string} field - Field key to update
-   * @param {string} value - Value to store
-   * @returns {boolean} True if update successful, false if session not found
-   */
-  updateField(userId, field, value) {
-    const session = this.sessions.get(userId);
-    if (!session) {
-      return false;
-    }
-    
-    session.data[field] = value;
-    return true;
   }
 
   /**
@@ -85,44 +81,27 @@ class SessionManager {
   }
 
   /**
-   * Gets the current field being collected for a user
+   * Gets the current patient field being collected
    * @param {number} userId - Telegram user ID
-   * @returns {object|null} Field object {key, label} or null if session not found or all fields collected
+   * @returns {object|null} Field object or null
    */
-  getCurrentField(userId) {
+  getCurrentPatientField(userId) {
     const session = this.sessions.get(userId);
-    if (!session) {
+    if (!session) return null;
+    
+    if (session.patientFieldIndex >= PATIENT_FIELDS.length) {
       return null;
     }
     
-    if (session.currentFieldIndex >= FIELDS.length) {
-      return null;
-    }
+    const field = PATIENT_FIELDS[session.patientFieldIndex];
     
-    const field = FIELDS[session.currentFieldIndex];
-    
-    // Skip dokterPemeriksa field if doctor name already set from /start
+    // Skip dokterPemeriksa if already set
     if (field.key === 'dokterPemeriksa' && session.doctorName) {
-      // Move to next field
-      session.currentFieldIndex++;
-      return this.getCurrentField(userId); // Recursive call to get next field
+      session.patientFieldIndex++;
+      return this.getCurrentPatientField(userId);
     }
     
     return field;
-  }
-
-  /**
-   * Gets all collected data for a user
-   * @param {number} userId - Telegram user ID
-   * @returns {object|null} Data object or null if session not found
-   */
-  getAllData(userId) {
-    const session = this.sessions.get(userId);
-    if (!session) {
-      return null;
-    }
-    
-    return session.data;
   }
 }
 

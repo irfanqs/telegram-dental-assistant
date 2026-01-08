@@ -1,16 +1,8 @@
-/**
- * Property-based tests for Bot module
- * Tests session resume continuity
- * Feature: telegram-patient-bot, Property 8: Session Resume Continuity
- * Validates: Requirements 1.3
- */
-
 const fc = require('fast-check');
 const TelegramPatientBot = require('../src/bot');
 const SessionManager = require('../src/sessionManager');
 const { FIELDS, CALLBACK_DATA } = require('../src/constants');
 
-// Mock node-telegram-bot-api
 jest.mock('node-telegram-bot-api');
 const TelegramBot = require('node-telegram-bot-api');
 
@@ -26,27 +18,17 @@ function createMockBotInstance() {
 
 describe('Bot Property-Based Tests', () => {
   describe('Property 2: Field Collection Completeness', () => {
-    /**
-     * **Feature: telegram-patient-bot, Property 2: Field Collection Completeness**
-     * **Validates: Requirements 2.4**
-     * 
-     * For any patient data collection session that reaches confirmation stage,
-     * all 18 required fields should have values stored in the session.
-     */
+
     test('should have all 18 fields populated when reaching confirmation stage', () => {
       fc.assert(
         fc.property(
-          // Generate random user ID
           fc.integer({ min: 1, max: 1000000 }),
-          // Generate random chat ID
           fc.integer({ min: 1, max: 1000000 }),
-          // Generate random values for all 18 fields
           fc.array(fc.string({ minLength: 1 }).filter(s => !s.startsWith('/')), { 
             minLength: FIELDS.length, 
             maxLength: FIELDS.length 
           }),
           (userId, chatId, fieldValues) => {
-            // Setup
             const mockBotInstance = createMockBotInstance();
 
             TelegramBot.mockImplementation(() => mockBotInstance);
@@ -64,10 +46,8 @@ describe('Bot Property-Based Tests', () => {
 
             bot.start();
 
-            // Create session
             sessionManager.createSession(userId);
 
-            // Simulate collecting all fields
             for (let i = 0; i < FIELDS.length; i++) {
               const msg = {
                 chat: { id: chatId },
@@ -78,20 +58,16 @@ describe('Bot Property-Based Tests', () => {
               messageHandler(msg);
             }
 
-            // Assert: All 18 fields should be populated
             const session = sessionManager.getSession(userId);
             expect(session).not.toBeNull();
             
-            // Check that all fields have values
             for (let i = 0; i < FIELDS.length; i++) {
               const field = FIELDS[i];
               expect(session.data[field.key]).toBe(fieldValues[i]);
             }
 
-            // Verify we have exactly 18 fields
             expect(Object.keys(session.data).length).toBe(18);
 
-            // Verify field index is at the end (all fields collected)
             expect(session.currentFieldIndex).toBe(FIELDS.length);
           }
         ),
@@ -101,24 +77,12 @@ describe('Bot Property-Based Tests', () => {
   });
 
   describe('Property 9: Input Acceptance', () => {
-    /**
-     * **Feature: telegram-patient-bot, Property 9: Input Acceptance**
-     * **Validates: Requirements 3.3**
-     * 
-     * For any text input provided by user during data collection,
-     * the bot should accept and store it without modification or validation.
-     */
     test('should accept and store any text input without modification', () => {
       fc.assert(
         fc.property(
-          // Generate random user ID
           fc.integer({ min: 1, max: 1000000 }),
-          // Generate random chat ID
           fc.integer({ min: 1, max: 1000000 }),
-          // Generate random field index
           fc.integer({ min: 0, max: FIELDS.length - 1 }),
-          // Generate various types of strings including edge cases
-          // Filter out strings that start with "/" as they are treated as commands
           fc.oneof(
             fc.string(), // Regular strings
             fc.unicodeString(), // Unicode characters
@@ -175,13 +139,6 @@ describe('Bot Property-Based Tests', () => {
   });
 
   describe('Property 8: Session Resume Continuity', () => {
-    /**
-     * **Feature: telegram-patient-bot, Property 8: Session Resume Continuity**
-     * **Validates: Requirements 1.3**
-     * 
-     * For any active session, when user sends /start and chooses to continue,
-     * the bot should resume from the exact field where the user left off.
-     */
     test('should resume from exact field where user left off', async () => {
       await fc.assert(
         fc.asyncProperty(
