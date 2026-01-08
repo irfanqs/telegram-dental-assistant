@@ -261,16 +261,29 @@ class TelegramPatientBot {
     session.patientData[currentField.key] = text;
     session.patientFieldIndex++;
 
-    // Check next field
+    // Check next field and skip if already filled (e.g., dokterPemeriksa from /start)
+    await this.promptNextPatientField(chatId, userId, session);
+  }
+
+  async promptNextPatientField(chatId, userId, session) {
     const nextField = PATIENT_FIELDS[session.patientFieldIndex];
-    if (nextField) {
-      await this.bot.sendMessage(chatId, `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label}:`);
-    } else {
-      // Start teeth collection
+    
+    if (!nextField) {
+      // All patient fields done, start teeth collection
       session.state = 'collecting_teeth';
       session.teethFieldIndex = 0;
       await this.promptNextTeethField(chatId, userId, session);
+      return;
     }
+
+    // Skip field if already filled (e.g., dokterPemeriksa from /start)
+    if (session.patientData[nextField.key]) {
+      session.patientFieldIndex++;
+      await this.promptNextPatientField(chatId, userId, session);
+      return;
+    }
+
+    await this.bot.sendMessage(chatId, `${MESSAGES.FIELD_PROMPT_PREFIX}${nextField.label}:`);
   }
 
   // ==================== TEETH DATA COLLECTION ====================
@@ -626,10 +639,7 @@ class TelegramPatientBot {
     if (!session) return;
 
     if (session.state === 'collecting_patient') {
-      const field = PATIENT_FIELDS[session.patientFieldIndex];
-      if (field) {
-        await this.bot.sendMessage(chatId, `${MESSAGES.FIELD_PROMPT_PREFIX}${field.label}:`);
-      }
+      await this.promptNextPatientField(chatId, userId, session);
     } else if (session.state === 'collecting_teeth') {
       await this.promptNextTeethField(chatId, userId, session);
     } else {
