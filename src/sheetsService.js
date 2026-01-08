@@ -54,6 +54,17 @@ class SheetsService {
   }
 
   /**
+   * Get current date formatted as DD/MM/YYYY
+   */
+  getCurrentDate() {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  /**
    * Get current time formatted as HH:mm:ss
    */
   getCurrentTime() {
@@ -127,8 +138,8 @@ class SheetsService {
         const no = this.getNextNo();
         const rowNumber = startRow + i;
         
-        // Build row: No, Record ID, Timestamp, Patient Fields..., Teeth Fields...
-        const rowData = [no, recordId, timestamp];
+        // Build row: No, Record ID, Tanggal, Timestamp, Patient Fields..., Teeth Fields...
+        const rowData = [no, recordId, this.getCurrentDate(), timestamp];
         
         // Add patient data
         PATIENT_FIELDS.forEach(field => {
@@ -145,8 +156,8 @@ class SheetsService {
         // Track image updates for kondisiGigi
         const kondisiImageUrl = this.getKondisiGigiImageUrl(tooth.kondisiGigi);
         if (kondisiImageUrl) {
-          // Column index: 3 (No, RecordID, Timestamp) + PATIENT_FIELDS.length + index of kondisiGigi in TEETH_FIELDS
-          const kondisiColIndex = 3 + PATIENT_FIELDS.length + TEETH_FIELDS.findIndex(f => f.key === 'kondisiGigi');
+          // Column index: 4 (No, RecordID, Tanggal, Timestamp) + PATIENT_FIELDS.length + index of kondisiGigi in TEETH_FIELDS
+          const kondisiColIndex = 4 + PATIENT_FIELDS.length + TEETH_FIELDS.findIndex(f => f.key === 'kondisiGigi');
           imageUpdates.push({
             row: rowNumber,
             col: kondisiColIndex,
@@ -157,7 +168,7 @@ class SheetsService {
         // Track image updates for letakKaries
         const kariesImageUrl = this.getLetakKariesImageUrl(tooth.letakKaries);
         if (kariesImageUrl) {
-          const kariesColIndex = 3 + PATIENT_FIELDS.length + TEETH_FIELDS.findIndex(f => f.key === 'letakKaries');
+          const kariesColIndex = 4 + PATIENT_FIELDS.length + TEETH_FIELDS.findIndex(f => f.key === 'letakKaries');
           imageUpdates.push({
             row: rowNumber,
             col: kariesColIndex,
