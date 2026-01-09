@@ -10,6 +10,10 @@ const {
   KARIES_TYPES, 
   KONDISI_GIGI_TYPES,
   REKOMENDASI_PERAWATAN,
+  OKLUSI_TYPES,
+  TORUS_PALATINUS_TYPES,
+  TORUS_MANDIBULARIS_TYPES,
+  PALATUM_TYPES,
   PATIENT_FIELDS,
   TEETH_FIELDS,
   ALL_FIELDS
@@ -180,6 +184,22 @@ class TelegramPatientBot {
       else if (data.startsWith(CALLBACK_DATA.FIELD_REKOMENDASI_PREFIX)) {
         await this.handleRekomendasiSelection(chatId, userId, data);
       }
+      // Field inputs - Oklusi
+      else if (data.startsWith(CALLBACK_DATA.FIELD_OKLUSI_PREFIX)) {
+        await this.handleOklusiSelection(chatId, userId, data);
+      }
+      // Field inputs - Torus Palatinus
+      else if (data.startsWith(CALLBACK_DATA.FIELD_TORUS_P_PREFIX)) {
+        await this.handleTorusPalatinusSelection(chatId, userId, data);
+      }
+      // Field inputs - Torus Mandibularis
+      else if (data.startsWith(CALLBACK_DATA.FIELD_TORUS_M_PREFIX)) {
+        await this.handleTorusMandibularisSelection(chatId, userId, data);
+      }
+      // Field inputs - Palatum
+      else if (data.startsWith(CALLBACK_DATA.FIELD_PALATUM_PREFIX)) {
+        await this.handlePalatumSelection(chatId, userId, data);
+      }
       // Add more teeth
       else if (data === CALLBACK_DATA.ADD_TEETH_YES) {
         await this.handleAddMoreTeethYes(chatId, userId);
@@ -316,6 +336,14 @@ class TelegramPatientBot {
       await this.showLetakKariesDropdown(chatId);
     } else if (currentField.key === 'rekomendasiPerawatan') {
       await this.showRekomendasiDropdown(chatId);
+    } else if (currentField.key === 'oklusi') {
+      await this.showOklusiDropdown(chatId);
+    } else if (currentField.key === 'torusPalatinus') {
+      await this.showTorusPalatinusDropdown(chatId);
+    } else if (currentField.key === 'torusMandibularis') {
+      await this.showTorusMandibularisDropdown(chatId);
+    } else if (currentField.key === 'palatum') {
+      await this.showPalatumDropdown(chatId);
     } else {
       await this.bot.sendMessage(chatId, `${MESSAGES.FIELD_PROMPT_PREFIX}${currentField.label}:`);
     }
@@ -364,6 +392,42 @@ class TelegramPatientBot {
     });
   }
 
+  async showOklusiDropdown(chatId) {
+    const keyboard = OKLUSI_TYPES.map(o => [
+      { text: o.label, callback_data: `${CALLBACK_DATA.FIELD_OKLUSI_PREFIX}${o.key}` }
+    ]);
+    await this.bot.sendMessage(chatId, MESSAGES.SELECT_OKLUSI, {
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  }
+
+  async showTorusPalatinusDropdown(chatId) {
+    const keyboard = TORUS_PALATINUS_TYPES.map(t => [
+      { text: t.label, callback_data: `${CALLBACK_DATA.FIELD_TORUS_P_PREFIX}${t.key}` }
+    ]);
+    await this.bot.sendMessage(chatId, MESSAGES.SELECT_TORUS_PALATINUS, {
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  }
+
+  async showTorusMandibularisDropdown(chatId) {
+    const keyboard = TORUS_MANDIBULARIS_TYPES.map(t => [
+      { text: t.label, callback_data: `${CALLBACK_DATA.FIELD_TORUS_M_PREFIX}${t.key}` }
+    ]);
+    await this.bot.sendMessage(chatId, MESSAGES.SELECT_TORUS_MANDIBULARIS, {
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  }
+
+  async showPalatumDropdown(chatId) {
+    const keyboard = PALATUM_TYPES.map(p => [
+      { text: p.label, callback_data: `${CALLBACK_DATA.FIELD_PALATUM_PREFIX}${p.key}` }
+    ]);
+    await this.bot.sendMessage(chatId, MESSAGES.SELECT_PALATUM, {
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  }
+
   async handleKondisiGigiSelection(chatId, userId, data) {
     const session = this.sessionManager.getSession(userId);
     if (!session) return;
@@ -407,6 +471,70 @@ class TelegramPatientBot {
 
     if (!session.currentTooth) session.currentTooth = {};
     session.currentTooth.rekomendasiPerawatan = rekomendasi.label;
+    session.teethFieldIndex++;
+
+    await this.promptNextTeethField(chatId, userId, session);
+  }
+
+  async handleOklusiSelection(chatId, userId, data) {
+    const session = this.sessionManager.getSession(userId);
+    if (!session) return;
+
+    const key = data.replace(CALLBACK_DATA.FIELD_OKLUSI_PREFIX, '');
+    const oklusi = OKLUSI_TYPES.find(o => o.key === key);
+    
+    if (!oklusi) return;
+
+    if (!session.currentTooth) session.currentTooth = {};
+    session.currentTooth.oklusi = oklusi.label;
+    session.teethFieldIndex++;
+
+    await this.promptNextTeethField(chatId, userId, session);
+  }
+
+  async handleTorusPalatinusSelection(chatId, userId, data) {
+    const session = this.sessionManager.getSession(userId);
+    if (!session) return;
+
+    const key = data.replace(CALLBACK_DATA.FIELD_TORUS_P_PREFIX, '');
+    const torus = TORUS_PALATINUS_TYPES.find(t => t.key === key);
+    
+    if (!torus) return;
+
+    if (!session.currentTooth) session.currentTooth = {};
+    session.currentTooth.torusPalatinus = torus.label;
+    session.teethFieldIndex++;
+
+    await this.promptNextTeethField(chatId, userId, session);
+  }
+
+  async handleTorusMandibularisSelection(chatId, userId, data) {
+    const session = this.sessionManager.getSession(userId);
+    if (!session) return;
+
+    const key = data.replace(CALLBACK_DATA.FIELD_TORUS_M_PREFIX, '');
+    const torus = TORUS_MANDIBULARIS_TYPES.find(t => t.key === key);
+    
+    if (!torus) return;
+
+    if (!session.currentTooth) session.currentTooth = {};
+    session.currentTooth.torusMandibularis = torus.label;
+    session.teethFieldIndex++;
+
+    await this.promptNextTeethField(chatId, userId, session);
+  }
+
+  async handlePalatumSelection(chatId, userId, data) {
+    const session = this.sessionManager.getSession(userId);
+    if (!session) return;
+
+    const key = data.replace(CALLBACK_DATA.FIELD_PALATUM_PREFIX, '');
+    const palatum = PALATUM_TYPES.find(p => p.key === key);
+    
+    if (!palatum) return;
+
+    if (!session.currentTooth) session.currentTooth = {};
+    session.currentTooth.palatum = palatum.label;
     session.teethFieldIndex++;
 
     await this.promptNextTeethField(chatId, userId, session);
@@ -605,6 +733,14 @@ class TelegramPatientBot {
             await this.showLetakKariesDropdown(chatId);
           } else if (fieldKeyName === 'rekomendasiPerawatan') {
             await this.showRekomendasiDropdown(chatId);
+          } else if (fieldKeyName === 'oklusi') {
+            await this.showOklusiDropdown(chatId);
+          } else if (fieldKeyName === 'torusPalatinus') {
+            await this.showTorusPalatinusDropdown(chatId);
+          } else if (fieldKeyName === 'torusMandibularis') {
+            await this.showTorusMandibularisDropdown(chatId);
+          } else if (fieldKeyName === 'palatum') {
+            await this.showPalatumDropdown(chatId);
           }
         } else {
           await this.bot.sendMessage(chatId,

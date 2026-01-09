@@ -18,6 +18,16 @@ const PATIENT_FIELDS = [
 // Teeth data fields - collected per tooth (can be multiple)
 const TEETH_FIELDS = [
   { key: 'gigiDikeluhkan', label: 'Gigi yang Dikeluhkan' },
+  { key: 'oklusi', label: 'Oklusi', type: 'dropdown' },
+  { key: 'torusPalatinus', label: 'Torus Palatinus', type: 'dropdown' },
+  { key: 'torusMandibularis', label: 'Torus Mandibularis', type: 'dropdown' },
+  { key: 'palatum', label: 'Palatum', type: 'dropdown' },
+  { key: 'diastema', label: 'Diastema' },
+  { key: 'gigiAnomali', label: 'Gigi Anomali' },
+  { key: 'skorD', label: 'D' },
+  { key: 'skorM', label: 'M' },
+  { key: 'skorF', label: 'F' },
+  { key: 'skorDMF', label: 'Skor DMF' },
   { key: 'kondisiGigi', label: 'Kondisi Gigi', type: 'dropdown' },
   { key: 'letakKaries', label: 'Letak Karies', type: 'dropdown', conditional: true },
   { key: 'rekomendasiPerawatan', label: 'Rekomendasi Perawatan', type: 'dropdown' }
@@ -57,7 +67,11 @@ const MESSAGES = {
   SELECT_FIELD_TO_EDIT: 'Pilih field yang ingin diubah:',
   SELECT_LETAK_KARIES: 'Pilih Letak Karies:',
   SELECT_KONDISI_GIGI: 'Pilih Kondisi Gigi:',
-  SELECT_REKOMENDASI: 'Pilih Rekomendasi Perawatan:'
+  SELECT_REKOMENDASI: 'Pilih Rekomendasi Perawatan:',
+  SELECT_OKLUSI: 'Pilih Oklusi:',
+  SELECT_TORUS_PALATINUS: 'Pilih Torus Palatinus:',
+  SELECT_TORUS_MANDIBULARIS: 'Pilih Torus Mandibularis:',
+  SELECT_PALATUM: 'Pilih Palatum:'
 };
 
 // Callback data constants for inline keyboards
@@ -82,11 +96,46 @@ const CALLBACK_DATA = {
   FIELD_KARIES_PREFIX: 'field_karies_',
   FIELD_KONDISI_PREFIX: 'field_kondisi_',
   FIELD_REKOMENDASI_PREFIX: 'field_rekom_',
+  FIELD_OKLUSI_PREFIX: 'field_oklusi_',
+  FIELD_TORUS_P_PREFIX: 'field_torusp_',
+  FIELD_TORUS_M_PREFIX: 'field_torusm_',
+  FIELD_PALATUM_PREFIX: 'field_palatum_',
   
   // Add more teeth callbacks
   ADD_TEETH_YES: 'add_teeth_yes',
   ADD_TEETH_NO: 'add_teeth_no'
 };
+
+// Oklusi options
+const OKLUSI_TYPES = [
+  { key: 'normal_bite', label: 'Normal Bite' },
+  { key: 'cross_bite', label: 'Cross Bite' },
+  { key: 'steep_bite', label: 'Steep Bite' }
+];
+
+// Torus Palatinus options
+const TORUS_PALATINUS_TYPES = [
+  { key: 'tidak_ada', label: 'Tidak Ada' },
+  { key: 'kecil', label: 'Kecil' },
+  { key: 'sedang', label: 'Sedang' },
+  { key: 'besar', label: 'Besar' },
+  { key: 'multiple', label: 'Multiple' }
+];
+
+// Torus Mandibularis options
+const TORUS_MANDIBULARIS_TYPES = [
+  { key: 'tidak_ada', label: 'Tidak Ada' },
+  { key: 'kiri', label: 'Kiri' },
+  { key: 'kanan', label: 'Kanan' },
+  { key: 'kedua_sisi', label: 'Kedua Sisi' }
+];
+
+// Palatum options
+const PALATUM_TYPES = [
+  { key: 'dalam', label: 'Dalam' },
+  { key: 'sedang', label: 'Sedang' },
+  { key: 'rendah', label: 'Rendah' }
+];
 
 // Kondisi Gigi options (will show images in Google Sheets)
 const KONDISI_GIGI_TYPES = [
@@ -192,5 +241,9 @@ module.exports = {
   CALLBACK_DATA,
   KONDISI_GIGI_TYPES,
   KARIES_TYPES,
-  REKOMENDASI_PERAWATAN
+  REKOMENDASI_PERAWATAN,
+  OKLUSI_TYPES,
+  TORUS_PALATINUS_TYPES,
+  TORUS_MANDIBULARIS_TYPES,
+  PALATUM_TYPES
 };
