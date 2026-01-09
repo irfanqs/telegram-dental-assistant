@@ -4,7 +4,7 @@
  */
 
 const { google } = require('googleapis');
-const { PATIENT_FIELDS, TEETH_FIELDS, KONDISI_GIGI_TYPES, KARIES_TYPES } = require('./constants');
+const { PATIENT_FIELDS, TEETH_FIELDS, EXAMINATION_FIELDS, KONDISI_GIGI_TYPES, KARIES_TYPES } = require('./constants');
 
 class SheetsService {
   constructor(spreadsheetId, credentialsPath) {
@@ -124,8 +124,9 @@ class SheetsService {
    * Creates one row per tooth entry
    * @param {Object} patientData - Patient data object
    * @param {Array} teethData - Array of teeth data objects
+   * @param {Object} examinationData - Examination data object
    */
-  async appendPatientData(patientData, teethData) {
+  async appendPatientData(patientData, teethData, examinationData = {}) {
     try {
       await this.initializationPromise;
 
@@ -148,7 +149,7 @@ class SheetsService {
         const no = this.getNextNo();
         const rowNumber = startRow + i;
         
-        // Build row: No, Record ID, Tanggal, Timestamp, Patient Fields..., Teeth Fields...
+        // Build row: No, Record ID, Tanggal, Timestamp, Patient Fields..., Teeth Fields..., Examination Fields...
         const rowData = [no, recordId, this.getCurrentDate(), timestamp];
         
         // Add patient data
@@ -159,6 +160,11 @@ class SheetsService {
         // Add teeth data (text values first, will update with images later)
         TEETH_FIELDS.forEach(field => {
           rowData.push(tooth[field.key] || '');
+        });
+
+        // Add examination data (same for all teeth rows)
+        EXAMINATION_FIELDS.forEach(field => {
+          rowData.push(examinationData[field.key] || '');
         });
 
         rows.push(rowData);

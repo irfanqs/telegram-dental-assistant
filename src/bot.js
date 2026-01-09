@@ -16,6 +16,7 @@ const {
   PALATUM_TYPES,
   PATIENT_FIELDS,
   TEETH_FIELDS,
+  EXAMINATION_FIELDS,
   ALL_FIELDS
 } = require('./constants');
 const path = require('path');
@@ -258,6 +259,12 @@ class TelegramPatientBot {
         await this.handleTeethFieldInput(chatId, userId, session, msg.text);
         return;
       }
+
+      // Collecting examination data (after teeth)
+      if (session.state === 'collecting_examination') {
+        await this.handleExaminationFieldInput(chatId, userId, session, msg.text);
+        return;
+      }
     } catch (error) {
       console.error('Error in handleMessage:', error);
       await this.sendErrorMessage(chatId, 'Terjadi kesalahan. Silakan coba lagi.');
@@ -336,14 +343,6 @@ class TelegramPatientBot {
       await this.showLetakKariesDropdown(chatId);
     } else if (currentField.key === 'rekomendasiPerawatan') {
       await this.showRekomendasiDropdown(chatId);
-    } else if (currentField.key === 'oklusi') {
-      await this.showOklusiDropdown(chatId);
-    } else if (currentField.key === 'torusPalatinus') {
-      await this.showTorusPalatinusDropdown(chatId);
-    } else if (currentField.key === 'torusMandibularis') {
-      await this.showTorusMandibularisDropdown(chatId);
-    } else if (currentField.key === 'palatum') {
-      await this.showPalatumDropdown(chatId);
     } else {
       await this.bot.sendMessage(chatId, `${MESSAGES.FIELD_PROMPT_PREFIX}${currentField.label}:`);
     }
@@ -485,11 +484,10 @@ class TelegramPatientBot {
     
     if (!oklusi) return;
 
-    if (!session.currentTooth) session.currentTooth = {};
-    session.currentTooth.oklusi = oklusi.label;
-    session.teethFieldIndex++;
+    session.examinationData.oklusi = oklusi.label;
+    session.examinationFieldIndex++;
 
-    await this.promptNextTeethField(chatId, userId, session);
+    await this.promptNextExaminationField(chatId, userId, session);
   }
 
   async handleTorusPalatinusSelection(chatId, userId, data) {
@@ -501,11 +499,10 @@ class TelegramPatientBot {
     
     if (!torus) return;
 
-    if (!session.currentTooth) session.currentTooth = {};
-    session.currentTooth.torusPalatinus = torus.label;
-    session.teethFieldIndex++;
+    session.examinationData.torusPalatinus = torus.label;
+    session.examinationFieldIndex++;
 
-    await this.promptNextTeethField(chatId, userId, session);
+    await this.promptNextExaminationField(chatId, userId, session);
   }
 
   async handleTorusMandibularisSelection(chatId, userId, data) {
@@ -517,11 +514,10 @@ class TelegramPatientBot {
     
     if (!torus) return;
 
-    if (!session.currentTooth) session.currentTooth = {};
-    session.currentTooth.torusMandibularis = torus.label;
-    session.teethFieldIndex++;
+    session.examinationData.torusMandibularis = torus.label;
+    session.examinationFieldIndex++;
 
-    await this.promptNextTeethField(chatId, userId, session);
+    await this.promptNextExaminationField(chatId, userId, session);
   }
 
   async handlePalatumSelection(chatId, userId, data) {
@@ -533,11 +529,10 @@ class TelegramPatientBot {
     
     if (!palatum) return;
 
-    if (!session.currentTooth) session.currentTooth = {};
-    session.currentTooth.palatum = palatum.label;
-    session.teethFieldIndex++;
+    session.examinationData.palatum = palatum.label;
+    session.examinationFieldIndex++;
 
-    await this.promptNextTeethField(chatId, userId, session);
+    await this.promptNextExaminationField(chatId, userId, session);
   }
 
   // ==================== ADD MORE TEETH ====================
@@ -579,8 +574,48 @@ class TelegramPatientBot {
       session.teethData.push({ ...session.currentTooth });
     }
 
-    // Show confirmation summary
-    await this.showConfirmationSummary(chatId, userId);
+    // Start collecting examination data
+    session.state = 'collecting_examination';
+    session.examinationFieldIndex = 0;
+    await this.promptNextExaminationField(chatId, userId, session);
+  }
+
+  // ==================== EXAMINATION DATA COLLECTION ====================
+
+  async promptNextExaminationField(chatId, userId, session) {
+    const currentField = EXAMINATION_FIELDS[session.examinationFieldIndex];
+    
+    if (!currentField) {
+      // All examination fields done, show confirmation
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    // Show appropriate prompt based on field type
+    if (currentField.key === 'oklusi') {
+      await this.showOklusiDropdown(chatId);
+    } else if (currentField.key === 'torusPalatinus') {
+      await this.showTorusPalatinusDropdown(chatId);
+    } else if (currentField.key === 'torusMandibularis') {
+      await this.showTorusMandibularisDropdown(chatId);
+    } else if (currentField.key === 'palatum') {
+      await this.showPalatumDropdown(chatId);
+    } else {
+      await this.bot.sendMessage(chatId, `${MESSAGES.FIELD_PROMPT_PREFIX}${currentField.label}:`);
+    }
+  }
+
+  async handleExaminationFieldInput(chatId, userId, session, text) {
+    const currentField = EXAMINATION_FIELDS[session.examinationFieldIndex];
+    
+    if (!currentField) return;
+
+    // Only handle text input for non-dropdown fields
+    if (currentField.type !== 'dropdown') {
+      session.examinationData[currentField.key] = text;
+      session.examinationFieldIndex++;
+      await this.promptNextExaminationField(chatId, userId, session);
+    }
   }
 
   // ==================== CONFIRMATION & SAVE ====================
@@ -610,6 +645,13 @@ class TelegramPatientBot {
       });
     });
 
+    // Examination data
+    summary += '\n*Data Pemeriksaan:*\n';
+    EXAMINATION_FIELDS.forEach(field => {
+      const value = session.examinationData[field.key] || '-';
+      summary += `• ${field.label}: ${value}\n`;
+    });
+
     summary += MESSAGES.SUMMARY_QUESTION;
 
     const options = {
@@ -636,7 +678,8 @@ class TelegramPatientBot {
     try {
       const result = await this.sheetsService.appendPatientData(
         session.patientData,
-        session.teethData
+        session.teethData,
+        session.examinationData
       );
 
       if (result.success) {
@@ -665,13 +708,13 @@ class TelegramPatientBot {
 
     session.state = 'editing';
 
-    // Build keyboard with patient fields and teeth
+    // Build keyboard with patient fields, teeth, and examination fields
     const keyboard = [];
     
     // Patient fields
     PATIENT_FIELDS.forEach(field => {
       keyboard.push([{ 
-        text: field.label, 
+        text: `📋 ${field.label}`, 
         callback_data: `${CALLBACK_DATA.EDIT_FIELD_PREFIX}patient_${field.key}` 
       }]);
     });
@@ -679,8 +722,16 @@ class TelegramPatientBot {
     // Teeth entries
     session.teethData.forEach((tooth, index) => {
       keyboard.push([{ 
-        text: `Gigi ${index + 1}: ${tooth.gigiDikeluhkan || '-'}`, 
+        text: `🦷 Gigi ${index + 1}: ${tooth.gigiDikeluhkan || '-'}`, 
         callback_data: `${CALLBACK_DATA.EDIT_FIELD_PREFIX}tooth_${index}` 
+      }]);
+    });
+
+    // Examination fields
+    EXAMINATION_FIELDS.forEach(field => {
+      keyboard.push([{ 
+        text: `🔬 ${field.label}`, 
+        callback_data: `${CALLBACK_DATA.EDIT_FIELD_PREFIX}exam_${field.key}` 
       }]);
     });
 
@@ -733,13 +784,28 @@ class TelegramPatientBot {
             await this.showLetakKariesDropdown(chatId);
           } else if (fieldKeyName === 'rekomendasiPerawatan') {
             await this.showRekomendasiDropdown(chatId);
-          } else if (fieldKeyName === 'oklusi') {
+          }
+        } else {
+          await this.bot.sendMessage(chatId,
+            `${MESSAGES.EDIT_FIELD_PROMPT_PREFIX}${field.label}${MESSAGES.EDIT_FIELD_PROMPT_SUFFIX}:`
+          );
+        }
+      }
+    } else if (fieldKey.startsWith('exam_')) {
+      const key = fieldKey.replace('exam_', '');
+      const field = EXAMINATION_FIELDS.find(f => f.key === key);
+      
+      if (field) {
+        session.editingField = { type: 'examination', key };
+        
+        if (field.type === 'dropdown') {
+          if (key === 'oklusi') {
             await this.showOklusiDropdown(chatId);
-          } else if (fieldKeyName === 'torusPalatinus') {
+          } else if (key === 'torusPalatinus') {
             await this.showTorusPalatinusDropdown(chatId);
-          } else if (fieldKeyName === 'torusMandibularis') {
+          } else if (key === 'torusMandibularis') {
             await this.showTorusMandibularisDropdown(chatId);
-          } else if (fieldKeyName === 'palatum') {
+          } else if (key === 'palatum') {
             await this.showPalatumDropdown(chatId);
           }
         } else {
@@ -761,6 +827,8 @@ class TelegramPatientBot {
       if (session.teethData[toothIndex]) {
         session.teethData[toothIndex][key] = text;
       }
+    } else if (session.editingField.type === 'examination') {
+      session.examinationData[session.editingField.key] = text;
     }
 
     session.editingField = null;
@@ -778,6 +846,8 @@ class TelegramPatientBot {
       await this.promptNextPatientField(chatId, userId, session);
     } else if (session.state === 'collecting_teeth') {
       await this.promptNextTeethField(chatId, userId, session);
+    } else if (session.state === 'collecting_examination') {
+      await this.promptNextExaminationField(chatId, userId, session);
     } else {
       await this.showConfirmationSummary(chatId, userId);
     }

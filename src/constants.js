@@ -18,6 +18,13 @@ const PATIENT_FIELDS = [
 // Teeth data fields - collected per tooth (can be multiple)
 const TEETH_FIELDS = [
   { key: 'gigiDikeluhkan', label: 'Gigi yang Dikeluhkan' },
+  { key: 'kondisiGigi', label: 'Kondisi Gigi', type: 'dropdown' },
+  { key: 'letakKaries', label: 'Letak Karies', type: 'dropdown', conditional: true },
+  { key: 'rekomendasiPerawatan', label: 'Rekomendasi Perawatan', type: 'dropdown' }
+];
+
+// Examination fields - collected once after all teeth data (setelah user bilang "Tidak" untuk tambah gigi)
+const EXAMINATION_FIELDS = [
   { key: 'oklusi', label: 'Oklusi', type: 'dropdown' },
   { key: 'torusPalatinus', label: 'Torus Palatinus', type: 'dropdown' },
   { key: 'torusMandibularis', label: 'Torus Mandibularis', type: 'dropdown' },
@@ -27,14 +34,11 @@ const TEETH_FIELDS = [
   { key: 'skorD', label: 'D' },
   { key: 'skorM', label: 'M' },
   { key: 'skorF', label: 'F' },
-  { key: 'skorDMF', label: 'Skor DMF' },
-  { key: 'kondisiGigi', label: 'Kondisi Gigi', type: 'dropdown' },
-  { key: 'letakKaries', label: 'Letak Karies', type: 'dropdown', conditional: true },
-  { key: 'rekomendasiPerawatan', label: 'Rekomendasi Perawatan', type: 'dropdown' }
+  { key: 'skorDMF', label: 'Skor DMF' }
 ];
 
 // All fields combined for summary display
-const ALL_FIELDS = [...PATIENT_FIELDS, ...TEETH_FIELDS];
+const ALL_FIELDS = [...PATIENT_FIELDS, ...TEETH_FIELDS, ...EXAMINATION_FIELDS];
 
 // Bot messages
 const MESSAGES = {
@@ -236,6 +240,7 @@ const REKOMENDASI_PERAWATAN = [
 module.exports = {
   PATIENT_FIELDS,
   TEETH_FIELDS,
+  EXAMINATION_FIELDS,
   ALL_FIELDS,
   MESSAGES,
   CALLBACK_DATA,

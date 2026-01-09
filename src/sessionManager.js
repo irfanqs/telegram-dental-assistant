@@ -23,7 +23,7 @@ class SessionManager {
   createSession(userId, doctorName = null) {
     const session = {
       userId,
-      state: 'collecting_patient', // collecting_patient, collecting_teeth, confirming, editing
+      state: 'collecting_patient', // collecting_patient, collecting_teeth, collecting_examination, confirming, editing
       doctorName: doctorName,
       
       // Patient data (collected once)
@@ -34,6 +34,10 @@ class SessionManager {
       teethFieldIndex: 0,
       currentTooth: {},
       teethData: [],
+      
+      // Examination data (collected once after teeth)
+      examinationFieldIndex: 0,
+      examinationData: {},
       
       // Editing state
       editingField: null
