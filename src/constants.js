@@ -31,9 +31,9 @@ const EXAMINATION_FIELDS = [
   { key: 'palatum', label: 'Palatum', type: 'dropdown' },
   { key: 'diastema', label: 'Diastema' },
   { key: 'gigiAnomali', label: 'Gigi Anomali' },
-  { key: 'skorD', label: 'D' },
-  { key: 'skorM', label: 'M' },
-  { key: 'skorF', label: 'F' },
+  { key: 'skorD', label: 'D (Decay)' },
+  { key: 'skorM', label: 'M (Missin)' },
+  { key: 'skorF', label: 'F (Filled)' },
   { key: 'skorDMF', label: 'Skor DMF' }
 ];
 
