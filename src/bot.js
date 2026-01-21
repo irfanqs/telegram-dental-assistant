@@ -14,6 +14,9 @@ const {
   TORUS_PALATINUS_TYPES,
   TORUS_MANDIBULARIS_TYPES,
   PALATUM_TYPES,
+  YA_TIDAK_OPTIONS,
+  KONDISI_GIGI_GELIGI_TYPES,
+  REKOMENDASI_UTAMA_TYPES,
   PATIENT_FIELDS,
   TEETH_FIELDS,
   EXAMINATION_FIELDS,
@@ -200,6 +203,18 @@ class TelegramPatientBot {
       // Field inputs - Palatum
       else if (data.startsWith(CALLBACK_DATA.FIELD_PALATUM_PREFIX)) {
         await this.handlePalatumSelection(chatId, userId, data);
+      }
+      // Field inputs - Ya/Tidak (untuk beberapa pertanyaan)
+      else if (data.startsWith(CALLBACK_DATA.FIELD_YA_TIDAK_PREFIX)) {
+        await this.handleYaTidakSelection(chatId, userId, data);
+      }
+      // Field inputs - Kondisi Gigigeligi
+      else if (data.startsWith(CALLBACK_DATA.FIELD_KONDISI_GIGIGELIGI_PREFIX)) {
+        await this.handleKondisiGigigeligiSelection(chatId, userId, data);
+      }
+      // Field inputs - Rekomendasi Utama
+      else if (data.startsWith(CALLBACK_DATA.FIELD_REKOM_UTAMA_PREFIX)) {
+        await this.handleRekomendasiUtamaSelection(chatId, userId, data);
       }
       // Add more teeth
       else if (data === CALLBACK_DATA.ADD_TEETH_YES) {
@@ -535,6 +550,94 @@ class TelegramPatientBot {
     await this.promptNextExaminationField(chatId, userId, session);
   }
 
+  // Ya/Tidak dropdown for multiple fields
+  async showYaTidakDropdown(chatId, fieldKey) {
+    const keyboard = YA_TIDAK_OPTIONS.map(o => [
+      { text: o.label, callback_data: `${CALLBACK_DATA.FIELD_YA_TIDAK_PREFIX}${fieldKey}_${o.key}` }
+    ]);
+    
+    const fieldLabels = {
+      faseGeligiCampuran: 'Fase Geligi Campuran',
+      molarErupsiSempurna: '4 Molar Permanen RA-RB Sudah erupsi Sempurna',
+      insisifErupsiSempurna: '4 Insisif Permanen RA-RB Sudah erupsi Sempurna',
+      relasiMolarKanan: 'Relasi Molar Kanan neutroklasi',
+      relasiMolarKiri: 'Relasi Molar Kiri neutroklasi',
+      kasusSederhana: 'Kasus sederhana (Dental bukan Skeletal)',
+      diastemaMultipel: 'Diastema Multipel'
+    };
+    
+    await this.bot.sendMessage(chatId, `Pilih ${fieldLabels[fieldKey] || fieldKey}:`, {
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  }
+
+  async handleYaTidakSelection(chatId, userId, data) {
+    const session = this.sessionManager.getSession(userId);
+    if (!session) return;
+
+    const parts = data.replace(CALLBACK_DATA.FIELD_YA_TIDAK_PREFIX, '').split('_');
+    const fieldKey = parts[0];
+    const optionKey = parts[1];
+    const option = YA_TIDAK_OPTIONS.find(o => o.key === optionKey);
+    
+    if (!option) return;
+
+    session.examinationData[fieldKey] = option.label;
+    session.examinationFieldIndex++;
+
+    await this.promptNextExaminationField(chatId, userId, session);
+  }
+
+  // Kondisi Gigi Geligi dropdown
+  async showKondisiGigiGeligiDropdown(chatId) {
+    const keyboard = KONDISI_GIGI_GELIGI_TYPES.map(k => [
+      { text: k.label, callback_data: `${CALLBACK_DATA.FIELD_KONDISI_GIGIGELIGI_PREFIX}${k.key}` }
+    ]);
+    await this.bot.sendMessage(chatId, 'Pilih Kondisi Gigi Geligi:', {
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  }
+
+  async handleKondisiGigigeligiSelection(chatId, userId, data) {
+    const session = this.sessionManager.getSession(userId);
+    if (!session) return;
+
+    const key = data.replace(CALLBACK_DATA.FIELD_KONDISI_GIGIGELIGI_PREFIX, '');
+    const kondisi = KONDISI_GIGI_GELIGI_TYPES.find(k => k.key === key);
+    
+    if (!kondisi) return;
+
+    session.examinationData.kondisiGigiGeligi = kondisi.label;
+    session.examinationFieldIndex++;
+
+    await this.promptNextExaminationField(chatId, userId, session);
+  }
+
+  // Rekomendasi Utama dropdown
+  async showRekomendasiUtamaDropdown(chatId) {
+    const keyboard = REKOMENDASI_UTAMA_TYPES.map(r => [
+      { text: r.label, callback_data: `${CALLBACK_DATA.FIELD_REKOM_UTAMA_PREFIX}${r.key}` }
+    ]);
+    await this.bot.sendMessage(chatId, 'Pilih Rekomendasi Perawatan Utama:', {
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  }
+
+  async handleRekomendasiUtamaSelection(chatId, userId, data) {
+    const session = this.sessionManager.getSession(userId);
+    if (!session) return;
+
+    const key = data.replace(CALLBACK_DATA.FIELD_REKOM_UTAMA_PREFIX, '');
+    const rekomendasi = REKOMENDASI_UTAMA_TYPES.find(r => r.key === key);
+    
+    if (!rekomendasi) return;
+
+    session.examinationData.rekomendasiUtama = rekomendasi.label;
+    session.examinationFieldIndex++;
+
+    await this.promptNextExaminationField(chatId, userId, session);
+  }
+
   // ==================== ADD MORE TEETH ====================
 
   async askAddMoreTeeth(chatId) {
@@ -600,6 +703,13 @@ class TelegramPatientBot {
       await this.showTorusMandibularisDropdown(chatId);
     } else if (currentField.key === 'palatum') {
       await this.showPalatumDropdown(chatId);
+    } else if (['faseGeligiCampuran', 'molarErupsiSempurna', 'insisifErupsiSempurna', 
+                'relasiMolarKanan', 'relasiMolarKiri', 'kasusSederhana', 'diastemaMultipel'].includes(currentField.key)) {
+      await this.showYaTidakDropdown(chatId, currentField.key);
+    } else if (currentField.key === 'kondisiGigiGeligi') {
+      await this.showKondisiGigiGeligiDropdown(chatId);
+    } else if (currentField.key === 'rekomendasiUtama') {
+      await this.showRekomendasiUtamaDropdown(chatId);
     } else {
       await this.bot.sendMessage(chatId, `${MESSAGES.FIELD_PROMPT_PREFIX}${currentField.label}:`);
     }
@@ -807,6 +917,13 @@ class TelegramPatientBot {
             await this.showTorusMandibularisDropdown(chatId);
           } else if (key === 'palatum') {
             await this.showPalatumDropdown(chatId);
+          } else if (['faseGeligiCampuran', 'molarErupsiSempurna', 'insisifErupsiSempurna', 
+                      'relasiMolarKanan', 'relasiMolarKiri', 'kasusSederhana', 'diastemaMultipel'].includes(key)) {
+            await this.showYaTidakDropdown(chatId, key);
+          } else if (key === 'kondisiGigiGeligi') {
+            await this.showKondisiGigiGeligiDropdown(chatId);
+          } else if (key === 'rekomendasiUtama') {
+            await this.showRekomendasiUtamaDropdown(chatId);
           }
         } else {
           await this.bot.sendMessage(chatId,

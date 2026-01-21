@@ -31,10 +31,17 @@ const EXAMINATION_FIELDS = [
   { key: 'palatum', label: 'Palatum', type: 'dropdown' },
   { key: 'diastema', label: 'Diastema' },
   { key: 'gigiAnomali', label: 'Gigi Anomali' },
-  { key: 'skorD', label: 'D (Decay)' },
-  { key: 'skorM', label: 'M (Missin)' },
-  { key: 'skorF', label: 'F (Filled)' },
-  { key: 'skorDMF', label: 'Skor DMF' }
+  { key: 'faseGeligiCampuran', label: 'Fase Geligi Campuran', type: 'dropdown' },
+  { key: 'molarErupsiSempurna', label: '4 Molar Permanen RA-RB Sudah erupsi Sempurna', type: 'dropdown' },
+  { key: 'insisifErupsiSempurna', label: '4 Insisif Permanen RA-RB Sudah erupsi Sempurna', type: 'dropdown' },
+  { key: 'relasiMolarKanan', label: 'Relasi Molar Kanan neutroklasi', type: 'dropdown' },
+  { key: 'relasiMolarKiri', label: 'Relasi Molar Kiri neutroklasi', type: 'dropdown' },
+  { key: 'kasusSederhana', label: 'Kasus sederhana (Dental bukan Skeletal)', type: 'dropdown' },
+  { key: 'diastemaMultipel', label: 'Diastema Multipel', type: 'dropdown' },
+  { key: 'kondisiGigiGeligi', label: 'Kondisi Gigi Geligi', type: 'dropdown' },
+  { key: 'catatanLain', label: 'Lain-Lain / Catatan' },
+  { key: 'rekomendasiUtama', label: 'Rekomendasi Perawatan Utama', type: 'dropdown' },
+  { key: 'dokterPenanggungJawab', label: 'Dokter Gigi Penanggung Jawab Lapangan' }
 ];
 
 // All fields combined for summary display
@@ -104,6 +111,9 @@ const CALLBACK_DATA = {
   FIELD_TORUS_P_PREFIX: 'field_torusp_',
   FIELD_TORUS_M_PREFIX: 'field_torusm_',
   FIELD_PALATUM_PREFIX: 'field_palatum_',
+  FIELD_YA_TIDAK_PREFIX: 'field_yatidak_',
+  FIELD_KONDISI_GIGIGELIGI_PREFIX: 'field_kondgigi_',
+  FIELD_REKOM_UTAMA_PREFIX: 'field_rekomutama_',
   
   // Add more teeth callbacks
   ADD_TEETH_YES: 'add_teeth_yes',
@@ -139,6 +149,31 @@ const PALATUM_TYPES = [
   { key: 'dalam', label: 'Dalam' },
   { key: 'sedang', label: 'Sedang' },
   { key: 'rendah', label: 'Rendah' }
+];
+
+// Ya/Tidak options (untuk beberapa pertanyaan)
+const YA_TIDAK_OPTIONS = [
+  { key: 'ya', label: 'Ya' },
+  { key: 'tidak', label: 'Tidak' }
+];
+
+// Kondisi Gigi Geligi options
+const KONDISI_GIGI_GELIGI_TYPES = [
+  { key: 'berdesakan', label: 'Berdesakan' },
+  { key: 'gigitan_silang', label: 'Gigitan Silang' },
+  { key: 'protusi_anterior', label: 'Protusi Anterior' }
+];
+
+// Rekomendasi Perawatan Utama options
+const REKOMENDASI_UTAMA_TYPES = [
+  { key: 'tambalan_gigi', label: 'Tambalan Gigi' },
+  { key: 'perawatan_saluran_akar', label: 'Perawatan Saluran Akar' },
+  { key: 'indikasi_pulpektomi', label: 'Indikasi Pulpektomi' },
+  { key: 'cabut_gigi', label: 'Cabut Gigi' },
+  { key: 'scalling', label: 'Scalling' },
+  { key: 'odontektomi', label: 'Odontektomi' },
+  { key: 'indikasi_orto', label: 'Indikasi Orto' },
+  { key: 'dhe', label: 'DHE' }
 ];
 
 // Kondisi Gigi options (will show images in Google Sheets)
@@ -250,5 +285,8 @@ module.exports = {
   OKLUSI_TYPES,
   TORUS_PALATINUS_TYPES,
   TORUS_MANDIBULARIS_TYPES,
-  PALATUM_TYPES
+  PALATUM_TYPES,
+  YA_TIDAK_OPTIONS,
+  KONDISI_GIGI_GELIGI_TYPES,
+  REKOMENDASI_UTAMA_TYPES
 };
