@@ -451,6 +451,29 @@ class TelegramPatientBot {
     
     if (!kondisi) return;
 
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'toothfield') {
+      const { toothIndex } = session.editingField;
+      if (session.teethData[toothIndex]) {
+        session.teethData[toothIndex].kondisiGigi = kondisi.label;
+        
+        // If changed to karies, ask for letak karies
+        if (kondisi.hasKariesLocation) {
+          session.editingField.waitingForKaries = true;
+          await this.showLetakKariesDropdown(chatId);
+          return;
+        } else {
+          // If not karies, clear letak karies
+          session.teethData[toothIndex].letakKaries = '-';
+        }
+      }
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    // Normal flow
     if (!session.currentTooth) session.currentTooth = {};
     session.currentTooth.kondisiGigi = kondisi.label;
     session.teethFieldIndex++;
@@ -467,6 +490,19 @@ class TelegramPatientBot {
     
     if (!karies) return;
 
+    // Check if editing (either direct edit or after kondisi changed to karies)
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'toothfield') {
+      const { toothIndex } = session.editingField;
+      if (session.teethData[toothIndex]) {
+        session.teethData[toothIndex].letakKaries = karies.label;
+      }
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    // Normal flow
     if (!session.currentTooth) session.currentTooth = {};
     session.currentTooth.letakKaries = karies.label;
     session.teethFieldIndex++;
@@ -483,6 +519,19 @@ class TelegramPatientBot {
     
     if (!rekomendasi) return;
 
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'toothfield') {
+      const { toothIndex } = session.editingField;
+      if (session.teethData[toothIndex]) {
+        session.teethData[toothIndex].rekomendasiPerawatan = rekomendasi.label;
+      }
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    // Normal flow
     if (!session.currentTooth) session.currentTooth = {};
     session.currentTooth.rekomendasiPerawatan = rekomendasi.label;
     session.teethFieldIndex++;
@@ -500,8 +549,16 @@ class TelegramPatientBot {
     if (!oklusi) return;
 
     session.examinationData.oklusi = oklusi.label;
-    session.examinationFieldIndex++;
 
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'examination') {
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    session.examinationFieldIndex++;
     await this.promptNextExaminationField(chatId, userId, session);
   }
 
@@ -515,8 +572,16 @@ class TelegramPatientBot {
     if (!torus) return;
 
     session.examinationData.torusPalatinus = torus.label;
-    session.examinationFieldIndex++;
 
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'examination') {
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    session.examinationFieldIndex++;
     await this.promptNextExaminationField(chatId, userId, session);
   }
 
@@ -530,8 +595,16 @@ class TelegramPatientBot {
     if (!torus) return;
 
     session.examinationData.torusMandibularis = torus.label;
-    session.examinationFieldIndex++;
 
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'examination') {
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    session.examinationFieldIndex++;
     await this.promptNextExaminationField(chatId, userId, session);
   }
 
@@ -545,8 +618,16 @@ class TelegramPatientBot {
     if (!palatum) return;
 
     session.examinationData.palatum = palatum.label;
-    session.examinationFieldIndex++;
 
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'examination') {
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    session.examinationFieldIndex++;
     await this.promptNextExaminationField(chatId, userId, session);
   }
 
@@ -583,8 +664,16 @@ class TelegramPatientBot {
     if (!option) return;
 
     session.examinationData[fieldKey] = option.label;
-    session.examinationFieldIndex++;
 
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'examination') {
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    session.examinationFieldIndex++;
     await this.promptNextExaminationField(chatId, userId, session);
   }
 
@@ -608,8 +697,16 @@ class TelegramPatientBot {
     if (!kondisi) return;
 
     session.examinationData.kondisiGigiGeligi = kondisi.label;
-    session.examinationFieldIndex++;
 
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'examination') {
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    session.examinationFieldIndex++;
     await this.promptNextExaminationField(chatId, userId, session);
   }
 
@@ -633,8 +730,16 @@ class TelegramPatientBot {
     if (!rekomendasi) return;
 
     session.examinationData.rekomendasiUtama = rekomendasi.label;
-    session.examinationFieldIndex++;
 
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'examination') {
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    session.examinationFieldIndex++;
     await this.promptNextExaminationField(chatId, userId, session);
   }
 
