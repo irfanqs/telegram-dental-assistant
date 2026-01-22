@@ -274,7 +274,7 @@ class TelegramPatientBot {
       }
 
       // Collecting teeth data
-      if (session.state === 'collecting_teeth') {
+      if (session.state === 'collecting_teeth' || session.state === 'adding_tooth_from_edit') {
         await this.handleTeethFieldInput(chatId, userId, session, msg.text);
         return;
       }
