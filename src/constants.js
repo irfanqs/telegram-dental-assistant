@@ -6,7 +6,7 @@
 // Patient data fields - basic info (collected once per patient)
 const PATIENT_FIELDS = [
   { key: 'namaPasien', label: 'Nama Pasien' },
-  { key: 'nik', label: 'NIK / No. RM' },
+  { key: 'nik', label: 'NIK / No. KTP' },
   { key: 'jenisKelamin', label: 'Jenis Kelamin' },
   { key: 'usia', label: 'Usia' },
   { key: 'golonganDarah', label: 'Golongan Darah' },
