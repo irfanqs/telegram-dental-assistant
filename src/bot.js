@@ -872,9 +872,8 @@ class TelegramPatientBot {
     const options = {
       reply_markup: {
         inline_keyboard: [[
-          { text: 'Yes', callback_data: CALLBACK_DATA.CONFIRM_YES },
-          { text: 'No', callback_data: CALLBACK_DATA.CONFIRM_NO },
-          { text: 'Change', callback_data: CALLBACK_DATA.CONFIRM_CHANGE }
+          { text: 'Sudah benar, simpan', callback_data: CALLBACK_DATA.CONFIRM_YES },
+          { text: 'Lakukan perubahan', callback_data: CALLBACK_DATA.CONFIRM_CHANGE }
         ]]
       },
       parse_mode: 'Markdown'
