@@ -165,7 +165,8 @@ const YA_TIDAK_OPTIONS = [
 const KONDISI_GIGI_GELIGI_TYPES = [
   { key: 'berdesakan', label: 'Berdesakan' },
   { key: 'gigitan_silang', label: 'Gigitan Silang' },
-  { key: 'protusi_anterior', label: 'Protusi Anterior' }
+  { key: 'protusi_anterior', label: 'Protusi Anterior' },
+  { key: 'tidak_ada', label: 'Tidak Ada' }
 ];
 
 // Rekomendasi Perawatan Utama options
