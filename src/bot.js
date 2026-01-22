@@ -168,6 +168,10 @@ class TelegramPatientBot {
       } else if (data === CALLBACK_DATA.CONFIRM_CHANGE) {
         await this.handleConfirmChange(chatId, userId);
       }
+      // Edit add new tooth
+      else if (data === CALLBACK_DATA.EDIT_ADD_TOOTH) {
+        await this.handleEditAddTooth(chatId, userId);
+      }
       // Edit field
       else if (data.startsWith(CALLBACK_DATA.EDIT_FIELD_PREFIX)) {
         await this.handleEditFieldSelection(chatId, userId, data);
@@ -334,7 +338,18 @@ class TelegramPatientBot {
     const currentField = TEETH_FIELDS[session.teethFieldIndex];
     
     if (!currentField) {
-      // All teeth fields done, ask if want to add more
+      // All teeth fields done
+      // If adding from edit mode, save tooth and go back to summary
+      if (session.state === 'adding_tooth_from_edit') {
+        if (session.currentTooth && Object.keys(session.currentTooth).length > 0) {
+          session.teethData.push({ ...session.currentTooth });
+        }
+        session.currentTooth = {};
+        session.state = 'confirming';
+        await this.showConfirmationSummary(chatId, userId);
+        return;
+      }
+      // Normal flow - ask if want to add more
       await this.askAddMoreTeeth(chatId);
       return;
     }
@@ -941,6 +956,12 @@ class TelegramPatientBot {
       }]);
     });
 
+    // Add new tooth option
+    keyboard.push([{ 
+      text: `➕ Tambah Gigi Baru`, 
+      callback_data: CALLBACK_DATA.EDIT_ADD_TOOTH 
+    }]);
+
     // Examination fields
     EXAMINATION_FIELDS.forEach(field => {
       keyboard.push([{ 
@@ -952,6 +973,18 @@ class TelegramPatientBot {
     await this.bot.sendMessage(chatId, MESSAGES.SELECT_FIELD_TO_EDIT, {
       reply_markup: { inline_keyboard: keyboard }
     });
+  }
+
+  async handleEditAddTooth(chatId, userId) {
+    const session = this.sessionManager.getSession(userId);
+    if (!session) return;
+
+    // Switch to adding new tooth mode
+    session.state = 'adding_tooth_from_edit';
+    session.currentTooth = {};
+    session.teethFieldIndex = 0;
+
+    await this.promptNextTeethField(chatId, userId, session);
   }
 
   async handleEditFieldSelection(chatId, userId, data) {

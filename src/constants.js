@@ -102,6 +102,7 @@ const CALLBACK_DATA = {
   // Edit callbacks prefix
   EDIT_FIELD_PREFIX: 'edit_',
   EDIT_BACK: 'edit_back',
+  EDIT_ADD_TOOTH: 'edit_add_tooth',
   
   // Karies callbacks prefix (for /letak_karies command)
   KARIES_PREFIX: 'karies_',
