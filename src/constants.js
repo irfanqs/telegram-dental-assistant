@@ -7,7 +7,7 @@
 const PATIENT_FIELDS = [
   { key: 'namaPasien', label: 'Nama Pasien' },
   { key: 'nik', label: 'NIK / No. KTP' },
-  { key: 'jenisKelamin', label: 'Jenis Kelamin' },
+  { key: 'jenisKelamin', label: 'Jenis Kelamin', type: 'dropdown' },
   { key: 'usia', label: 'Usia' },
   { key: 'golonganDarah', label: 'Golongan Darah' },
   { key: 'alamat', label: 'Alamat' },
@@ -19,7 +19,6 @@ const PATIENT_FIELDS = [
 const TEETH_FIELDS = [
   { key: 'gigiDikeluhkan', label: 'Gigi yang Dikeluhkan' },
   { key: 'kondisiGigi', label: 'Kondisi Gigi', type: 'dropdown' },
-  { key: 'letakKaries', label: 'Letak Karies', type: 'dropdown', conditional: true },
   { key: 'rekomendasiPerawatan', label: 'Rekomendasi Perawatan', type: 'dropdown' }
 ];
 
@@ -115,6 +114,7 @@ const CALLBACK_DATA = {
   FIELD_TORUS_P_PREFIX: 'field_torusp_',
   FIELD_TORUS_M_PREFIX: 'field_torusm_',
   FIELD_PALATUM_PREFIX: 'field_palatum_',
+  FIELD_JENIS_KELAMIN_PREFIX: 'field_jk_',
   FIELD_YA_TIDAK_PREFIX: 'field_yatidak_',
   FIELD_KONDISI_GIGIGELIGI_PREFIX: 'field_kondgigi_',
   FIELD_REKOM_UTAMA_PREFIX: 'field_rekomutama_',
@@ -161,12 +161,18 @@ const YA_TIDAK_OPTIONS = [
   { key: 'tidak', label: 'Tidak' }
 ];
 
+// Jenis Kelamin options
+const JENIS_KELAMIN_OPTIONS = [
+  { key: 'laki_laki', label: 'Laki-laki' },
+  { key: 'perempuan', label: 'Perempuan' }
+];
+
 // Kondisi Gigi Geligi options
 const KONDISI_GIGI_GELIGI_TYPES = [
   { key: 'berdesakan', label: 'Berdesakan' },
   { key: 'gigitan_silang', label: 'Gigitan Silang' },
   { key: 'protusi_anterior', label: 'Protusi Anterior' },
-  { key: 'tidak_ada', label: 'Tidak Ada' }
+  { key: 'gigi_normal', label: 'Gigi Normal' }
 ];
 
 // Rekomendasi Perawatan Utama options
@@ -292,6 +298,7 @@ module.exports = {
   TORUS_MANDIBULARIS_TYPES,
   PALATUM_TYPES,
   YA_TIDAK_OPTIONS,
+  JENIS_KELAMIN_OPTIONS,
   KONDISI_GIGI_GELIGI_TYPES,
   REKOMENDASI_UTAMA_TYPES
 };

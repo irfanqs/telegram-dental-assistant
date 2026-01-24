@@ -15,6 +15,7 @@ const {
   TORUS_MANDIBULARIS_TYPES,
   PALATUM_TYPES,
   YA_TIDAK_OPTIONS,
+  JENIS_KELAMIN_OPTIONS,
   KONDISI_GIGI_GELIGI_TYPES,
   REKOMENDASI_UTAMA_TYPES,
   PATIENT_FIELDS,
@@ -208,6 +209,10 @@ class TelegramPatientBot {
       else if (data.startsWith(CALLBACK_DATA.FIELD_PALATUM_PREFIX)) {
         await this.handlePalatumSelection(chatId, userId, data);
       }
+      // Field inputs - Jenis Kelamin
+      else if (data.startsWith(CALLBACK_DATA.FIELD_JENIS_KELAMIN_PREFIX)) {
+        await this.handleJenisKelaminSelection(chatId, userId, data);
+      }
       // Field inputs - Ya/Tidak (untuk beberapa pertanyaan)
       else if (data.startsWith(CALLBACK_DATA.FIELD_YA_TIDAK_PREFIX)) {
         await this.handleYaTidakSelection(chatId, userId, data);
@@ -303,6 +308,9 @@ class TelegramPatientBot {
       return;
     }
 
+    // Only handle text input for non-dropdown fields
+    if (currentField.type === 'dropdown') return;
+
     // Store the input
     session.patientData[currentField.key] = text;
     session.patientFieldIndex++;
@@ -326,6 +334,12 @@ class TelegramPatientBot {
     if (session.patientData[nextField.key]) {
       session.patientFieldIndex++;
       await this.promptNextPatientField(chatId, userId, session);
+      return;
+    }
+
+    // Show dropdown for jenis kelamin
+    if (nextField.key === 'jenisKelamin') {
+      await this.showJenisKelaminDropdown(chatId);
       return;
     }
 
@@ -354,23 +368,9 @@ class TelegramPatientBot {
       return;
     }
 
-    // Skip letakKaries if kondisi is not karies
-    if (currentField.key === 'letakKaries' && currentField.conditional) {
-      const currentTooth = session.currentTooth || {};
-      const kondisi = KONDISI_GIGI_TYPES.find(k => k.label === currentTooth.kondisiGigi);
-      if (!kondisi || !kondisi.hasKariesLocation) {
-        session.currentTooth.letakKaries = '-';
-        session.teethFieldIndex++;
-        await this.promptNextTeethField(chatId, userId, session);
-        return;
-      }
-    }
-
     // Show appropriate prompt based on field type
     if (currentField.key === 'kondisiGigi') {
       await this.showKondisiGigiDropdown(chatId);
-    } else if (currentField.key === 'letakKaries') {
-      await this.showLetakKariesDropdown(chatId);
     } else if (currentField.key === 'rekomendasiPerawatan') {
       await this.showRekomendasiDropdown(chatId);
     } else {
@@ -457,6 +457,39 @@ class TelegramPatientBot {
     });
   }
 
+  // Jenis Kelamin dropdown
+  async showJenisKelaminDropdown(chatId) {
+    const keyboard = JENIS_KELAMIN_OPTIONS.map(j => [
+      { text: j.label, callback_data: `${CALLBACK_DATA.FIELD_JENIS_KELAMIN_PREFIX}${j.key}` }
+    ]);
+    await this.bot.sendMessage(chatId, 'Pilih Jenis Kelamin:', {
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  }
+
+  async handleJenisKelaminSelection(chatId, userId, data) {
+    const session = this.sessionManager.getSession(userId);
+    if (!session) return;
+
+    const key = data.replace(CALLBACK_DATA.FIELD_JENIS_KELAMIN_PREFIX, '');
+    const jenisKelamin = JENIS_KELAMIN_OPTIONS.find(j => j.key === key);
+    
+    if (!jenisKelamin) return;
+
+    session.patientData.jenisKelamin = jenisKelamin.label;
+
+    // Check if editing
+    if (session.state === 'editing' && session.editingField && session.editingField.type === 'patient') {
+      session.editingField = null;
+      session.state = 'confirming';
+      await this.showConfirmationSummary(chatId, userId);
+      return;
+    }
+
+    session.patientFieldIndex++;
+    await this.promptNextPatientField(chatId, userId, session);
+  }
+
   async handleKondisiGigiSelection(chatId, userId, data) {
     const session = this.sessionManager.getSession(userId);
     if (!session) return;
@@ -471,16 +504,6 @@ class TelegramPatientBot {
       const { toothIndex } = session.editingField;
       if (session.teethData[toothIndex]) {
         session.teethData[toothIndex].kondisiGigi = kondisi.label;
-        
-        // If changed to karies, ask for letak karies
-        if (kondisi.hasKariesLocation) {
-          session.editingField.waitingForKaries = true;
-          await this.showLetakKariesDropdown(chatId);
-          return;
-        } else {
-          // If not karies, clear letak karies
-          session.teethData[toothIndex].letakKaries = '-';
-        }
       }
       session.editingField = null;
       session.state = 'confirming';
@@ -998,9 +1021,15 @@ class TelegramPatientBot {
       const field = PATIENT_FIELDS.find(f => f.key === key);
       if (field) {
         session.editingField = { type: 'patient', key };
-        await this.bot.sendMessage(chatId, 
-          `${MESSAGES.EDIT_FIELD_PROMPT_PREFIX}${field.label}${MESSAGES.EDIT_FIELD_PROMPT_SUFFIX}:`
-        );
+        
+        // Show dropdown for jenis kelamin
+        if (field.type === 'dropdown' && key === 'jenisKelamin') {
+          await this.showJenisKelaminDropdown(chatId);
+        } else {
+          await this.bot.sendMessage(chatId, 
+            `${MESSAGES.EDIT_FIELD_PROMPT_PREFIX}${field.label}${MESSAGES.EDIT_FIELD_PROMPT_SUFFIX}:`
+          );
+        }
       }
     } else if (fieldKey.startsWith('tooth_')) {
       const index = parseInt(fieldKey.replace('tooth_', ''));
